@@ -9,7 +9,7 @@ import kotlin.math.abs
 
 data class Location(val x: Int, val y: Int)
 
-data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = null) {
+data class Cell(val x: Int, val y: Int, var ownership: Int, var piece: Piece? = null) {
     // doesn't account for holes in the map!
     fun distance(other: Cell) = abs(x - other.x) + abs(y - other.y)
     fun distance(xx: Int, yy: Int) = abs(x - xx) + abs(y - yy)
@@ -55,7 +55,7 @@ fun main(args : Array<String>) {
     }
 
     val utils = StarterUtils()
-
+    val voidCellValue = 99;
     // game loop
     while (true) {
         val gold = input.nextInt()
@@ -66,10 +66,10 @@ fun main(args : Array<String>) {
         val board: List<List<Cell>> = List(12) { y ->
             input.next().mapIndexed { x: Int, ch ->
                 val type = when (ch) {
-                    '#' -> 9
-                    '.' -> 0
+                    '#' -> voidCellValue
+                    '.' -> -1
                     'O' -> 2; 'o' -> 1
-                    'X' -> -2; 'x' -> -1
+                    'X' -> -3; 'x' -> -2
                     else -> throw Exception("Unexpected")
                 }
                 Cell(x, y, type)
@@ -77,7 +77,7 @@ fun main(args : Array<String>) {
         }
 
         // Gives us a flat list of the non-void cells
-        val boardCells = board.flatten().filterNotNull()
+        val boardCells = board.flatten().filterNot { it.ownership == voidCellValue }
 
         lateinit var myHQ: Cell
         lateinit var enemyHQ: Cell
@@ -113,25 +113,23 @@ fun main(args : Array<String>) {
         val actions = mutableListOf<IAction>()
 
         val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
-        myPiecesCells.forEach { pieceCell ->
-            val target = boardCells
-                .filterNot { it == pieceCell }
-                .filter { it.piece == null }
-                .minBy { it.distance(enemyHQ.x,enemyHQ.y) }!!
-            actions += MoveAction(pieceCell.piece!!.id, target.x, target.y)
-            target.piece = pieceCell.piece
-            pieceCell.piece = null
+        myPiecesCells.map {
+            Pair(it, bestValueMove(it, enemyHQ, boardCells))
+        }.forEach {
+            err.println("$it.first $it.second")
+            actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
+            it.first.piece = null
         }
-//        actions.forEach(err::println)
+        actions.forEach(err::println)
 
         val trainingSpot = boardCells
             .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
-        err.println("Training $trainingSpot");
+        err.println("Training $trainingSpot")
 
         val myPieces = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
 
         // If we have enough cash, build a new piece!
-        if (gold > 10 && trainingSpot != null && myPiecesCells.isEmpty()) {
+        if (gold > 10 && trainingSpot != null && myPiecesCells.size < 5) {
             actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
         } else if (income - myPieces > 4 && trainingSpot != null) {
             actions += TrainAction(2, trainingSpot.x, trainingSpot.y)
@@ -143,4 +141,21 @@ fun main(args : Array<String>) {
             println("WAIT")
         }
     }
+}
+
+fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
+    val possibleMoves = flatBoard.filterNot {
+            it.ownership > 10
+        }.filter {
+        (it.x == myPiece.x - 1 && it.y == myPiece.y && it.x > 0) ||
+                (it.x == myPiece.x + 1 && it.y == myPiece.y && it.x < 12) ||
+                (it.x == myPiece.x && it.y == myPiece.y - 1 && it.y > 0) ||
+                (it.x == myPiece.x && it.y == myPiece.y + 1 && it.y < 12)
+    }
+    return possibleMoves.maxBy {
+        val distanceToEnemyHQ = it.distance(enemyHQ)
+        val distanceScore = if (distanceToEnemyHQ == 1) -100 else distanceToEnemyHQ
+        println("$it $distanceScore")
+        100 - it.ownership - distanceScore
+    }!!
 }

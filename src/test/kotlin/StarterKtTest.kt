@@ -4,16 +4,18 @@ import java.util.*
 import java.util.Collections.singletonList
 
 internal class StarterKtTest {
+    private val starterUtils = StarterUtils()
+
     @Test
     internal fun piece_cost_should_be_1() {
-        val level1 = StarterUtils().calculateCost(singletonList(Piece(1, true, 1)));
-        val level2 = StarterUtils().calculateCost(singletonList(Piece(1, true, 2)));
-        val level3 = StarterUtils().calculateCost(singletonList(Piece(1, true, 3)));
+        val level1 = starterUtils.calculateCost(singletonList(Piece(1, true, 1)));
+        val level2 = starterUtils.calculateCost(singletonList(Piece(1, true, 2)));
+        val level3 = starterUtils.calculateCost(singletonList(Piece(1, true, 3)));
         assertEquals(level1, 1, "Piece cost is 1")
         assertEquals(level2, 4, "Piece cost is 4")
         assertEquals(level3, 20, "Piece cost is 20")
 
-        val allThree = StarterUtils().calculateCost(
+        val allThree = starterUtils.calculateCost(
                 Arrays.asList(
                         Piece(1, true, 1),
                         Piece(1, true, 2),
@@ -35,7 +37,20 @@ internal class StarterKtTest {
 
     @Test
     internal fun print_empty_board() {
-        StarterUtils().printBoard(GameData.emptyBoard())
+        starterUtils.printBoard(GameData.emptyBoard())
+    }
+
+    @Test
+    internal fun move_value() {
+        val testBoard = GameData.emptyBoard()
+        val myPiece = testBoard.get(10).get(10)
+        val enemyHQ = testBoard.get(11).get(11)
+
+        starterUtils.printBoard(testBoard)
+        val flatBoard = testBoard.flatten()
+
+        val bestValueMove = bestValueMove(myPiece, enemyHQ, flatBoard)
+        println("best move $bestValueMove")
     }
 }
 
