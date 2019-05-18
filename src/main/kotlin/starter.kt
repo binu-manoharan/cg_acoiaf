@@ -155,7 +155,6 @@ fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
     return possibleMoves.maxBy {
         val distanceToEnemyHQ = it.distance(enemyHQ)
         val distanceScore = if (distanceToEnemyHQ == 1) -100 else distanceToEnemyHQ
-        println("$it $distanceScore")
         100 - it.ownership - distanceScore
     }!!
 }
