@@ -1,3 +1,4 @@
+import java.lang.System.err
 import java.util.*
 import kotlin.math.abs
 
@@ -53,6 +54,16 @@ fun main(args : Array<String>) {
                 type?.let { Cell(x, y, it) }
             }
         }
+        board.forEach {
+            it.forEach { it ->
+//                err.println(
+//                        it?.x.toString() + " " +
+//                                it?.y.toString() + " " +
+//                                it?.ownership.toString() + " " +
+//                                it?.piece.toString()
+//                );
+            }
+        }
 
         // Gives us a flat list of the non-void cells
         val boardCells = board.flatten().filterNotNull()
@@ -75,6 +86,8 @@ fun main(args : Array<String>) {
                 }
             }
         }
+//        err.println("My HQ $myHQ")
+//        err.println("Enemy HQ $enemyHQ")
 
         repeat(input.nextInt()) {
             val owner = input.nextInt()
@@ -94,17 +107,19 @@ fun main(args : Array<String>) {
             val target = boardCells
                 .filterNot { it == pieceCell }
                 .filter { it.piece == null }
-                .minBy { it.distance(5,5) }!!
+                .minBy { it.distance(enemyHQ.x,enemyHQ.y) }!!
             actions += MoveAction(pieceCell.piece!!.id, target.x, target.y)
             target.piece = pieceCell.piece
             pieceCell.piece = null
         }
+//        actions.forEach(err::println)
 
         val trainingSpot = boardCells
             .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
+        err.println("Training $trainingSpot");
 
         // If we have enough cash, build a new piece!
-        if (gold > 30 && trainingSpot != null) {
+        if (gold > 10 && trainingSpot != null && myPieces.size < 1) {
             actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
         }
 
