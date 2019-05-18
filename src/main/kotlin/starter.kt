@@ -15,7 +15,11 @@ data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = 
     fun distance(xx: Int, yy: Int) = abs(x - xx) + abs(y - yy)
 }
 
-data class Piece(val id: Int, val isFriendly: Boolean, val level: Int)
+data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
+    fun pieceCost(): Int {
+        return if (this.level == 1) return 1 else if (this.level == 2) return 4 else return 20;
+    }
+}
 
 interface IAction
 
@@ -27,13 +31,30 @@ data class TrainAction(val level: Int, val newX: Int, val newY: Int): IAction {
     override fun toString() = "TRAIN $level $newX $newY"
 }
 
+class StarterUtils {
+    fun calculateCost(pieces: List<Piece>): Int {
+        return pieces.map { it.pieceCost() }.sum()
+    }
+
+    fun printBoard(board: List<List<Cell>>) {
+        board.forEach { y ->
+            y.forEach {
+                err.printf("%3d", it.ownership)
+            }
+            err.println()
+        }
+    }
+}
+
 fun main(args : Array<String>) {
     val input = Scanner(System.`in`)
     val mines = List(input.nextInt()) {
         val x = input.nextInt()
         val y = input.nextInt()
-        Location(x,y)
+        Location(x, y)
     }
+
+    val utils = StarterUtils()
 
     // game loop
     while (true) {
@@ -42,26 +63,16 @@ fun main(args : Array<String>) {
         val opponentGold = input.nextInt()
         val opponentIncome = input.nextInt()
 
-        val board: List<List<Cell?>> = List(12) { y ->
+        val board: List<List<Cell>> = List(12) { y ->
             input.next().mapIndexed { x: Int, ch ->
                 val type = when (ch) {
-                    '#' -> null
+                    '#' -> 9
                     '.' -> 0
                     'O' -> 2; 'o' -> 1
                     'X' -> -2; 'x' -> -1
                     else -> throw Exception("Unexpected")
                 }
-                type?.let { Cell(x, y, it) }
-            }
-        }
-        board.forEach {
-            it.forEach { it ->
-//                err.println(
-//                        it?.x.toString() + " " +
-//                                it?.y.toString() + " " +
-//                                it?.ownership.toString() + " " +
-//                                it?.piece.toString()
-//                );
+                Cell(x, y, type)
             }
         }
 
@@ -101,9 +112,8 @@ fun main(args : Array<String>) {
 
         val actions = mutableListOf<IAction>()
 
-        // Move all existing units towards middle
-        val myPieces = boardCells.filter { it.piece?.isFriendly == true }
-        myPieces.forEach { pieceCell ->
+        val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
+        myPiecesCells.forEach { pieceCell ->
             val target = boardCells
                 .filterNot { it == pieceCell }
                 .filter { it.piece == null }
@@ -118,9 +128,13 @@ fun main(args : Array<String>) {
             .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
         err.println("Training $trainingSpot");
 
+        val myPieces = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
+
         // If we have enough cash, build a new piece!
-        if (gold > 10 && trainingSpot != null && myPieces.size < 1) {
+        if (gold > 10 && trainingSpot != null && myPiecesCells.isEmpty()) {
             actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
+        } else if (income - myPieces > 4 && trainingSpot != null) {
+            actions += TrainAction(2, trainingSpot.x, trainingSpot.y)
         }
 
         if (actions.any()) {
