@@ -18,6 +18,8 @@ data class Location(val x: Int, val y: Int) {
     }
 }
 
+data class Building(val owner: Int, val buildingType: Int, val x: Int, val y: Int)
+
 data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = null) {
     // doesn't account for holes in the map!
     fun distance(other: Cell) = abs(x - other.x) + abs(y - other.y)
@@ -77,6 +79,9 @@ fun main(args: Array<String>) {
         Location(x, y)
     }
 
+//     TODO calculate Location -> Enemy HQ distance on first move
+//     TODO Possibly to mines as well
+
     val utils = StarterUtils()
     val voidCellValue = 99;
     // game loop
@@ -106,7 +111,8 @@ fun main(args: Array<String>) {
         lateinit var enemyHQ: Cell
 
         val buildingCount = input.nextInt()
-        val builtMines = mutableListOf<Location>()
+        val buildings = mutableListOf<Building>()
+
         for (i in 0 until buildingCount) {
             val owner = input.nextInt()
             val buildingType = input.nextInt()
@@ -119,10 +125,12 @@ fun main(args: Array<String>) {
                     0 -> myHQ = hq
                     1 -> enemyHQ = hq
                 }
-            } else {
-                builtMines.add(Location(x, y))
             }
+            buildings += Building(owner, x, y, buildingType)
         }
+
+        val builtMinesLocations = buildings.filter { it.buildingType == 1 }
+                .map { Location(it.x, it.y) }
 
         repeat(input.nextInt()) {
             val owner = input.nextInt()
@@ -135,7 +143,16 @@ fun main(args: Array<String>) {
         }
 
         val actions = mutableListOf<IAction>()
-        generateActions(boardCells, enemyHQ, actions, builtMines, gold, income, mines, board)
+        generateActions(
+                boardCells,
+                enemyHQ,
+                actions,
+                builtMinesLocations.toMutableList(),
+                gold,
+                income,
+                mines,
+                board
+        )
 
         if (actions.any()) {
             println(actions.joinToString(";"))

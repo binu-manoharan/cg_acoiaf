@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import java.util.Collections.singletonList
 import java.util.Arrays
 
-
 internal class StarterKtTest {
     private val starterUtils = StarterUtils()
 
@@ -161,7 +160,7 @@ internal class StarterKtTest {
                 )
         )
 
-        assertThat("There are two neighbours",
+        assertThat("There are four neighbours",
                 Location(5, 5).getNeighbours(),
                 containsInAnyOrder(
                         Location(5, 4),
@@ -186,7 +185,6 @@ internal class StarterKtTest {
                 listOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
-                "There are two train actions",
                 actions,
                 anyOf(
                         hasItem(TrainAction(1, 1, 0)),
@@ -205,7 +203,6 @@ internal class StarterKtTest {
                 listOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
-                "There are two train actions",
                 actions,
                 anyOf(
                         hasItem(TrainAction(1, 1, 0)),
@@ -243,7 +240,6 @@ internal class StarterKtTest {
                 listOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
-                "There are two train actions",
                 actions,
                 allOf(
                         hasItem(BuildAction(1, 0)),
@@ -264,7 +260,6 @@ internal class StarterKtTest {
                 listOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
-                "There are two train actions",
                 actions,
                 allOf(
                         hasItem(BuildAction(1, 0)),
@@ -301,10 +296,9 @@ internal class StarterKtTest {
                 mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 1), Location(2, 0))
+                listOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
-                "There are two train actions",
                 actions,
                 allOf(
                         hasItem(MoveAction(1, 2, 0)),
