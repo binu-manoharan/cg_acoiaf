@@ -177,6 +177,7 @@ fun generateActions(
     myPiecesCells.map {
         Pair(it, bestValueMove(it, enemyHQ, boardCells))
     }.forEach {
+//        TODO remove actions where the current piece cannot kill opponent
         actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
         it.first.piece = null
     }
@@ -208,6 +209,8 @@ fun useGold(
     trainingSpots.sortBy { abs(it.x - it.y) }
 
     val trainingSpotWithPieces = trainingSpots.map { Pair(it, board[it.y][it.x].piece) }
+            .sortedBy { it.second != null }
+            .reversed()
 
     while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
         val mineCost = 20 + builtMines.count() * 4
