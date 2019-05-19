@@ -127,7 +127,7 @@ internal class StarterKtTest {
     }
 
     @Test
-    internal fun test_use_gold() {
+    internal fun test_use_gold_creates_troops() {
         val testBoard = GameData.emptyBoard()
         val actions = mutableListOf<IAction>()
         useGold(
@@ -163,6 +163,66 @@ internal class StarterKtTest {
                 anyOf(
                         hasItem(TrainAction(1, 1, 0)),
                         hasItem(TrainAction(1, 0, 1))
+                )
+        )
+    }
+
+    @Test
+    internal fun test_use_gold_creates_mines() {
+        val testBoard = GameData.emptyBoard().toMutableList()
+        testBoard[0] = listOf(
+                Cell(0, 0, 2, null),
+                Cell(1, 0, 1, null),
+                Cell(2, 0, 99, null),
+                Cell(3, 0, 0, null),
+                Cell(4, 0, 0, null),
+                Cell(5, 0, 0, null),
+                Cell(6, 0, 0, null),
+                Cell(7, 0, 0, null),
+                Cell(8, 0, 0, null),
+                Cell(9, 0, 0, null),
+                Cell(10, 0, 0, null),
+                Cell(11, 0, 0, null)
+        )
+        val actions = mutableListOf<IAction>()
+        useGold(
+                30,
+                0,
+                mutableListOf(),
+                mutableListOf(Location(1,0)),
+                testBoard,
+                actions,
+                listOf(Location(0, 1), Location(1,1), Location(2,0))
+        )
+        assertThat(
+                "There are two train actions",
+                actions,
+                allOf(
+                        hasItem(BuildAction(1, 0)),
+                        hasItem(TrainAction(1, 2, 0)),
+                        hasItem(TrainAction(1, 0, 1)),
+                        hasItem(TrainAction(1, 1, 1))
+                )
+        )
+
+        actions.clear()
+        useGold(
+                161,
+                0,
+                mutableListOf(),
+                mutableListOf(Location(1,0)),
+                testBoard,
+                actions,
+                listOf(Location(0, 1), Location(1,1), Location(2,0))
+        )
+        assertThat(
+                "There are two train actions",
+                actions,
+                allOf(
+                        hasItem(BuildAction(1, 0)),
+                        hasItem(TrainAction(3, 2, 0)),
+                        hasItem(TrainAction(3, 0, 1)),
+                        hasItem(TrainAction(3, 1, 1))
                 )
         )
     }

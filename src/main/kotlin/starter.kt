@@ -27,7 +27,7 @@ data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = 
 
 data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
     fun pieceCost(): Int {
-        return if (this.level == 1) return 1 else if (this.level == 2) return 4 else return 20;
+        return StarterUtils.pieceCost(this.level)
     }
 }
 
@@ -56,6 +56,11 @@ class StarterUtils {
                 err.printf("%3d", it.ownership)
             }
             err.println()
+        }
+    }
+    companion object {
+        fun pieceCost(level: Int): Int {
+            return if (level == 1) 1 else if (level == 2) 4 else 20
         }
     }
 }
@@ -179,22 +184,26 @@ fun useGold(
         val mineCost = 20 + builtMines.count() * 4
 
         if (availableGold > mineCost) {
-            mines.filterNot { builtMines.contains(it) }
+            val possibleMineLocation = mines.filter { !builtMines.contains(it) }
                     .map { board[it.y][it.x] }
                     .filter { it.ownership == 1 || it.ownership == 2 }
                     .filterNot { it.piece != null }
-                    .firstOrNull {
-                        availableGold -= mineCost
-                        builtMines.add(Location(it.x, it.y))
-                        actions.add(BuildAction(it.x, it.y))
-                    }
+                    .firstOrNull()
+
+            if (possibleMineLocation != null) {
+                availableGold -= mineCost
+                builtMines.add(Location(possibleMineLocation.x, possibleMineLocation.y))
+                actions.add(BuildAction(possibleMineLocation.x, possibleMineLocation.y))
+            }
         }
 
         // Exclude spots we've just moved to
         val trainingSpot = trainingSpots.firstOrNull { !consumedTrainingSpots.contains(it) }
         if (trainingSpot != null) {
-            availableGold--
-            actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
+            val unitLevel = if (availableGold > 100) 3 else if (availableGold > 50) 2 else 1
+
+            availableGold = availableGold - StarterUtils.pieceCost(unitLevel)
+            actions += TrainAction(unitLevel, trainingSpot.x, trainingSpot.y)
             consumedTrainingSpots.add(trainingSpot)
         } else {
             canDoMoreActions = false
