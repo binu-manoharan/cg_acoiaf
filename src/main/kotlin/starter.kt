@@ -31,18 +31,21 @@ data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
     }
 }
 
-interface IAction
-
-data class MoveAction(val id: Int, val newX: Int, val newY: Int) : IAction {
-    override fun toString() = "MOVE $id $newX $newY"
+interface IAction {
+    val x: Int
+    val y: Int
 }
 
-data class TrainAction(val level: Int, val newX: Int, val newY: Int) : IAction {
-    override fun toString() = "TRAIN $level $newX $newY"
+data class MoveAction(val id: Int, override val x: Int, override val y: Int) : IAction {
+    override fun toString() = "MOVE $id $x $y"
 }
 
-data class BuildAction(val newX: Int, val newY: Int) : IAction {
-    override fun toString() = "BUILD MINE $newX $newY"
+data class TrainAction(val level: Int, override val x: Int, override val y: Int) : IAction {
+    override fun toString() = "TRAIN $level $x $y"
+}
+
+data class BuildAction(override val x: Int, override val y: Int) : IAction {
+    override fun toString() = "BUILD MINE $x $y"
 }
 
 class StarterUtils {
@@ -58,6 +61,7 @@ class StarterUtils {
             err.println()
         }
     }
+
     companion object {
         fun pieceCost(level: Int): Int {
             return if (level == 1) 1 else if (level == 2) 4 else 20
@@ -161,8 +165,11 @@ private fun generateActions(
         it.first.piece = null
     }
 
-    val trainingSpots = getAllTrainingSpots(boardCells, builtMines)
-    err.println(trainingSpots)
+    val trainingSpots = getAllTrainingSpots(
+            boardCells,
+            builtMines,
+            actions.map { Location(it.x, it.y) }
+    )
     useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
 }
 
@@ -179,8 +186,9 @@ fun useGold(
     var availableIncome = income;
     var consumedTrainingSpots = mutableListOf<Location>()
     var canDoMoreActions = true
+    var moveActions = actions.map { Location(it.x, it.y) }
 
-    while (availableGold > 5 && canDoMoreActions) {
+    while (availableGold > 0 && canDoMoreActions) {
         val mineCost = 20 + builtMines.count() * 4
 
         if (availableGold > mineCost) {
@@ -227,16 +235,17 @@ fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
     }!!
 }
 
-fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>): List<Location> {
-    val allNeighborsToOwningCells = flatBoard.filter { it.ownership == 1 || it.ownership == 2 }
-            .map { Location(it.x, it.y) }
+fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>, moveActions: List<Location>): List<Location> {
+    val allNeighborsToOwningCells = flatBoard.filter {
+                it.ownership == 1 || it.ownership == 2 || moveActions.contains(Location(it.x, it.y))
+            }.map { Location(it.x, it.y) }
             .map { it.getNeighbours() }
             .flatten()
 
     return flatBoard.filter {
         allNeighborsToOwningCells.contains(Location(it.x, it.y))
     }.filterNot {
-        it.ownership > 0
+        it.ownership > 0 || moveActions.contains(Location(it.x, it.y))
     }.map {
         Location(it.x, it.y)
     }.filterNot { buildingLocations.contains(it) }

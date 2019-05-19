@@ -6,7 +6,6 @@ import java.util.Collections.singletonList
 import java.util.Arrays
 
 
-
 internal class StarterKtTest {
     private val starterUtils = StarterUtils()
 
@@ -60,16 +59,16 @@ internal class StarterKtTest {
     @Test
     internal fun all_training_spots() {
         val testBoard = GameData.emptyBoard().toMutableList()
-
+        val moveActions = mutableListOf<Location>()
         assertThat(
-                "There should be 2 trainig spots on an empty board",
-                getAllTrainingSpots(testBoard.flatten(), emptyList()),
+                "There should be 2 training spots on an empty board",
+                getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
                 hasSize(2)
         )
 
         assertThat(
-                "There should be 1 trainig spot - 1,0 is a building location",
-                getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1,0))),
+                "There should be 1 training spot - 1,0 is a building location",
+                getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1, 0)), moveActions),
                 hasSize(1)
         )
 
@@ -88,13 +87,60 @@ internal class StarterKtTest {
                 Cell(11, 0, 0, null)
         )
         assertThat(
-                "There should be 2 trainig spots - 1,0 is a building location, 2,0 is void",
-                getAllTrainingSpots(testBoard.flatten(), emptyList()),
+                "There should be 2 training spots - 1,0 is a building location, 2,0 is void",
+                getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
                 containsInAnyOrder(
-                        Location(0,1),
-                        Location(1,1)
+                        Location(0, 1),
+                        Location(1, 1)
                 )
         )
+    }
+
+    @Test
+    internal fun all_training_spots_with_move_action() {
+        val testBoard = GameData.emptyBoard().toMutableList()
+        val moveActions = mutableListOf<Location>()
+        moveActions += Location(1, 0)
+        val allTrainingSpots10 = getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions)
+        assertThat(
+                "The training spots should be 2,0 0,1 and 1,1",
+                allTrainingSpots10,
+                allOf(
+                        hasItem(Location(2,0)),
+                        hasItem(Location(1,1)),
+                        hasItem(Location(0,1))
+                )
+        )
+        assertThat(allTrainingSpots10, hasSize(3))
+
+//        assertThat(
+//                "There should be 1 training spot - 1,0 is a building location",
+//                getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1, 0)), moveActions),
+//                hasSize(1)
+//        )
+//
+//        testBoard[0] = listOf(
+//                Cell(0, 0, 2, null),
+//                Cell(1, 0, 2, null),
+//                Cell(2, 0, 99, null),
+//                Cell(3, 0, 0, null),
+//                Cell(4, 0, 0, null),
+//                Cell(5, 0, 0, null),
+//                Cell(6, 0, 0, null),
+//                Cell(7, 0, 0, null),
+//                Cell(8, 0, 0, null),
+//                Cell(9, 0, 0, null),
+//                Cell(10, 0, 0, null),
+//                Cell(11, 0, 0, null)
+//        )
+//        assertThat(
+//                "There should be 2 training spots - 1,0 is a building location, 2,0 is void",
+//                getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
+//                containsInAnyOrder(
+//                        Location(0, 1),
+//                        Location(1, 1)
+//                )
+//        )
     }
 
     @Test
@@ -102,7 +148,7 @@ internal class StarterKtTest {
         assertThat("There are two neighbours",
                 Location(0, 0).getNeighbours(),
                 containsInAnyOrder(
-                        Location(1,0),
+                        Location(1, 0),
                         Location(0, 1)
                 )
         )
@@ -110,7 +156,7 @@ internal class StarterKtTest {
         assertThat("There are two neighbours",
                 Location(11, 11).getNeighbours(),
                 containsInAnyOrder(
-                        Location(11,10),
+                        Location(11, 10),
                         Location(10, 11)
                 )
         )
@@ -118,9 +164,9 @@ internal class StarterKtTest {
         assertThat("There are two neighbours",
                 Location(5, 5).getNeighbours(),
                 containsInAnyOrder(
-                        Location(5,4),
-                        Location(5,6),
-                        Location(4,5),
+                        Location(5, 4),
+                        Location(5, 6),
+                        Location(4, 5),
                         Location(6, 5)
                 )
         )
@@ -137,7 +183,7 @@ internal class StarterKtTest {
                 emptyList(),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1,0))
+                listOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
                 "There are two train actions",
@@ -147,7 +193,8 @@ internal class StarterKtTest {
                         hasItem(TrainAction(1, 0, 1))
                 )
         )
-
+        assertThat(actions, hasSize(2))
+        actions.clear()
         useGold(
                 20,
                 1,
@@ -155,7 +202,7 @@ internal class StarterKtTest {
                 emptyList(),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1,0))
+                listOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
                 "There are two train actions",
@@ -165,6 +212,7 @@ internal class StarterKtTest {
                         hasItem(TrainAction(1, 0, 1))
                 )
         )
+        assertThat(actions, hasSize(2))
     }
 
     @Test
@@ -189,47 +237,82 @@ internal class StarterKtTest {
                 30,
                 0,
                 mutableListOf(),
-                mutableListOf(Location(1,0)),
+                mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1,1), Location(2,0))
+                listOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
                 "There are two train actions",
                 actions,
                 allOf(
                         hasItem(BuildAction(1, 0)),
-                        hasItem(TrainAction(1, 2, 0)),
                         hasItem(TrainAction(1, 0, 1)),
                         hasItem(TrainAction(1, 1, 1))
                 )
         )
+        assertThat(actions, hasSize(3))
 
         actions.clear()
         useGold(
                 161,
                 0,
                 mutableListOf(),
-                mutableListOf(Location(1,0)),
+                mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1,1), Location(2,0))
+                listOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
                 "There are two train actions",
                 actions,
                 allOf(
                         hasItem(BuildAction(1, 0)),
-                        hasItem(TrainAction(3, 2, 0)),
                         hasItem(TrainAction(3, 0, 1)),
                         hasItem(TrainAction(3, 1, 1))
                 )
         )
+        assertThat(actions, hasSize(3))
     }
 
     @Test
-    fun thisShouldCompile() {
-        val myList = Arrays.asList("a", "b", "c")
-        assertThat("List doesn't contain unexpected elements", myList, not(anyOf(hasItem("d"), hasItem("e"), hasItem("f"))))
+    internal fun should_not_add_actions_to_same_location() {
+        val testBoard = GameData.emptyBoard().toMutableList()
+        testBoard[0] = listOf(
+                Cell(0, 0, 2, null),
+                Cell(1, 0, 1, null),
+                Cell(2, 0, 0, null),
+                Cell(3, 0, 0, null),
+                Cell(4, 0, 0, null),
+                Cell(5, 0, 0, null),
+                Cell(6, 0, 0, null),
+                Cell(7, 0, 0, null),
+                Cell(8, 0, 0, null),
+                Cell(9, 0, 0, null),
+                Cell(10, 0, 0, null),
+                Cell(11, 0, 0, null)
+        )
+        val actions = mutableListOf<IAction>()
+        actions += MoveAction(1, 2, 0)
+        useGold(
+                30,
+                0,
+                mutableListOf(),
+                mutableListOf(Location(1, 0)),
+                testBoard,
+                actions,
+                listOf(Location(0, 1), Location(1, 1), Location(2, 0))
+        )
+        assertThat(
+                "There are two train actions",
+                actions,
+                allOf(
+                        hasItem(MoveAction(1, 2, 0)),
+                        hasItem(BuildAction(1, 0)),
+                        hasItem(TrainAction(1, 0, 1)),
+                        hasItem(TrainAction(1, 1, 1))
+                )
+        )
+        assertThat(actions, hasSize(4))
     }
 }
