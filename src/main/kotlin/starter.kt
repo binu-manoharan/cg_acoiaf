@@ -23,12 +23,16 @@ data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
 
 interface IAction
 
-data class MoveAction(val id: Int, val newX: Int, val newY: Int): IAction {
+data class MoveAction(val id: Int, val newX: Int, val newY: Int) : IAction {
     override fun toString() = "MOVE $id $newX $newY"
 }
 
-data class TrainAction(val level: Int, val newX: Int, val newY: Int): IAction {
+data class TrainAction(val level: Int, val newX: Int, val newY: Int) : IAction {
     override fun toString() = "TRAIN $level $newX $newY"
+}
+
+data class BuildAction(val newX: Int, val newY: Int) : IAction {
+    override fun toString() = "BUILD MINE $newX $newY"
 }
 
 class StarterUtils {
@@ -46,7 +50,7 @@ class StarterUtils {
     }
 }
 
-fun main(args : Array<String>) {
+fun main(args: Array<String>) {
     val input = Scanner(System.`in`)
     val mines = List(input.nextInt()) {
         val x = input.nextInt()
@@ -83,6 +87,7 @@ fun main(args : Array<String>) {
         lateinit var enemyHQ: Cell
 
         val buildingCount = input.nextInt()
+        val builtMines = mutableListOf<Location>()
         for (i in 0 until buildingCount) {
             val owner = input.nextInt()
             val buildingType = input.nextInt()
@@ -95,6 +100,8 @@ fun main(args : Array<String>) {
                     0 -> myHQ = hq
                     1 -> enemyHQ = hq
                 }
+            } else {
+                builtMines.add(Location(x, y))
             }
         }
 //        err.println("My HQ $myHQ")
@@ -116,22 +123,32 @@ fun main(args : Array<String>) {
         myPiecesCells.map {
             Pair(it, bestValueMove(it, enemyHQ, boardCells))
         }.forEach {
-            err.println("$it.first $it.second")
             actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
             it.first.piece = null
         }
-        actions.forEach(err::println)
 
         val trainingSpot = boardCells
-            .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
+                .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
         err.println("Training $trainingSpot")
 
-        val myPieces = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
+
+        if (gold > 40) {
+            mines.filterNot { builtMines.contains(it)}
+                    .map { board[it.y][it.x] }
+                    .filter { it.ownership == 1 || it.ownership == 2 }
+                    .filterNot { it.piece != null }
+                    .firstOrNull {
+                        actions.add(BuildAction(it.x, it.y))
+                    }
+        }
+
+        val myPiecesCost = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
 
         // If we have enough cash, build a new piece!
-        if (gold > 10 && trainingSpot != null && myPiecesCells.size < 5) {
+        val numPieces = myPiecesCells.size
+        if (gold > 10 && trainingSpot != null && numPieces < 5) {
             actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
-        } else if (income - myPieces > 4 && trainingSpot != null) {
+        } else if (income - myPiecesCost - numPieces > 0 && trainingSpot != null) {
             actions += TrainAction(2, trainingSpot.x, trainingSpot.y)
         }
 
@@ -145,8 +162,8 @@ fun main(args : Array<String>) {
 
 fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
     val possibleMoves = flatBoard.filterNot {
-            it.ownership > 10
-        }.filter {
+        it.ownership > 10
+    }.filter {
         (it.x == myPiece.x - 1 && it.y == myPiece.y && it.x > 0) ||
                 (it.x == myPiece.x + 1 && it.y == myPiece.y && it.x < 12) ||
                 (it.x == myPiece.x && it.y == myPiece.y - 1 && it.y > 0) ||
