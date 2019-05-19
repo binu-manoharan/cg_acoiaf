@@ -146,7 +146,7 @@ fun main(args: Array<String>) {
     }
 }
 
-private fun useGold(
+fun useGold(
         gold: Int,
         income: Int,
         builtMines: MutableList<Location>,
@@ -158,7 +158,7 @@ private fun useGold(
     var availableGold = gold;
     var availableIncome = income;
 
-    while (availableGold > 5 && availableIncome > 5) {
+    while (availableGold > 5) {
         val mineCost = 20 + builtMines.count() * 4
 
         if (availableGold > mineCost) {
@@ -171,11 +171,12 @@ private fun useGold(
                         builtMines.add(Location(it.x, it.y))
                         actions.add(BuildAction(it.x, it.y))
                     }
+        }
 
-            trainingSpots.any {
-                actions += TrainAction(1, it.x, it.y)
-                return
-            }
+        trainingSpots.any {
+            availableGold--
+            actions += TrainAction(1, it.x, it.y)
+            return
         }
     }
 }

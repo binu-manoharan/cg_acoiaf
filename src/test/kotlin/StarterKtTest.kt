@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.*
 import java.util.Collections.singletonList
+import java.util.Arrays
+
+
 
 internal class StarterKtTest {
     private val starterUtils = StarterUtils()
@@ -91,5 +94,33 @@ internal class StarterKtTest {
                 )
         )
     }
-}
 
+    @Test
+    internal fun test_use_gold() {
+        val testBoard = GameData.emptyBoard()
+        val actions = mutableListOf<IAction>()
+        useGold(
+                7,
+                0,
+                mutableListOf(),
+                emptyList(),
+                testBoard,
+                actions,
+                listOf(Location(0, 1), Location(1,0))
+        )
+        assertThat(
+                "There are two train actions",
+                actions,
+                anyOf(
+                        hasItem(TrainAction(1, 1, 0)),
+                        hasItem(TrainAction(1, 0, 1))
+                )
+        )
+    }
+
+    @Test
+    fun thisShouldCompile() {
+        val myList = Arrays.asList("a", "b", "c")
+        assertThat("List doesn't contain unexpected elements", myList, not(anyOf(hasItem("d"), hasItem("e"), hasItem("f"))))
+    }
+}
