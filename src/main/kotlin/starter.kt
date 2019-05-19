@@ -10,11 +10,11 @@ import kotlin.math.abs
 data class Location(val x: Int, val y: Int) {
     fun getNeighbours(): List<Location> {
         return listOf(
-            Location(x - 1, y),
-            Location(x + 1, y),
-            Location(x, y - 1),
-            Location(x, y + 1)
-        ).filter { it.x >= 0 && it.x <=11 && it.y >= 0 && it.y <= 11 }
+                Location(x - 1, y),
+                Location(x + 1, y),
+                Location(x, y - 1),
+                Location(x, y + 1)
+        ).filter { it.x >= 0 && it.x <= 11 && it.y >= 0 && it.y <= 11 }
     }
 }
 
@@ -135,7 +135,7 @@ fun main(args: Array<String>) {
             it.first.piece = null
         }
 
-        val trainingSpots = getAllTrainingSpots(boardCells)
+        val trainingSpots = getAllTrainingSpots(boardCells, builtMines)
         useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
 
         if (actions.any()) {
@@ -160,6 +160,7 @@ fun useGold(
 
     while (availableGold > 5) {
         val mineCost = 20 + builtMines.count() * 4
+        var consumedTrainingSpots = mutableListOf<Location>()
 
         if (availableGold > mineCost) {
             mines.filterNot { builtMines.contains(it) }
@@ -173,11 +174,13 @@ fun useGold(
                     }
         }
 
-        trainingSpots.any {
-            availableGold--
-            actions += TrainAction(1, it.x, it.y)
-            return
-        }
+        trainingSpots.filterNot { consumedTrainingSpots.contains(it) }
+                .any {
+                    availableGold--
+                    consumedTrainingSpots.add(Location(it.x, it.y))
+                    actions += TrainAction(1, it.x, it.y)
+                    return
+                }
     }
 }
 
@@ -197,7 +200,7 @@ fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
     }!!
 }
 
-fun getAllTrainingSpots(flatBoard: List<Cell>): List<Location> {
+fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>): List<Location> {
     val allNeighborsToOwningCells = flatBoard.filter { it.ownership == 1 || it.ownership == 2 }
             .map { Location(it.x, it.y) }
             .map { it.getNeighbours() }
@@ -205,9 +208,9 @@ fun getAllTrainingSpots(flatBoard: List<Cell>): List<Location> {
 
     return flatBoard.filter {
         allNeighborsToOwningCells.contains(Location(it.x, it.y))
-    }.filter {
-        it.ownership != 1 || it.ownership !=2
+    }.filterNot {
+        it.ownership == 1 || it.ownership == 2
     }.map {
         Location(it.x, it.y)
-    }
+    }.filterNot { buildingLocations.contains(it) }
 }

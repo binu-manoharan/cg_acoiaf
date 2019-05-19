@@ -1,9 +1,7 @@
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.*
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.util.*
 import java.util.Collections.singletonList
 import java.util.Arrays
 
@@ -61,9 +59,39 @@ internal class StarterKtTest {
 
     @Test
     internal fun all_training_spots() {
-        val testBoard = GameData.emptyBoard()
-        val allTrainingSpots = getAllTrainingSpots(testBoard.flatten())
-        assertThat("There should be 2 trainig spots on an empty board", allTrainingSpots, hasSize(2))
+        val testBoard = GameData.emptyBoard().toMutableList()
+
+        assertThat(
+                "There should be 2 trainig spots on an empty board",
+                getAllTrainingSpots(testBoard.flatten(), emptyList()),
+                hasSize(2)
+        )
+
+        assertThat(
+                "There should be 1 trainig spot - 1,0 is a building location",
+                getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1,0))),
+                hasSize(1)
+        )
+
+        testBoard[0] = listOf(
+                Cell(0, 0, 2, null),
+                Cell(1, 0, 2, null),
+                Cell(2, 0, 0, null),
+                Cell(3, 0, 0, null),
+                Cell(4, 0, 0, null),
+                Cell(5, 0, 0, null),
+                Cell(6, 0, 0, null),
+                Cell(7, 0, 0, null),
+                Cell(8, 0, 0, null),
+                Cell(9, 0, 0, null),
+                Cell(10, 0, 0, null),
+                Cell(11, 0, 0, null)
+        )
+        assertThat(
+                "There should be 3 trainig spots - 1,0 is a building location",
+                getAllTrainingSpots(testBoard.flatten(), emptyList()),
+                hasSize(3)
+        )
     }
 
     @Test
