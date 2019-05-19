@@ -126,7 +126,7 @@ fun main(args: Array<String>) {
                     1 -> enemyHQ = hq
                 }
             }
-            buildings += Building(owner, x, y, buildingType)
+            buildings += Building(owner, buildingType, x, y)
         }
 
         val builtMinesLocations = buildings.filter { it.buildingType == 1 }
@@ -188,7 +188,7 @@ fun generateActions(
             builtMines,
             actions.map { Location(it.x, it.y) }
     )
-    useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
+    useGold(gold, income, builtMines, mines, board, actions, trainingSpots.toMutableList())
 }
 
 fun useGold(
@@ -198,20 +198,25 @@ fun useGold(
         mines: List<Location>,
         board: List<List<Cell>>,
         actions: MutableList<Action>,
-        trainingSpots: List<Location>
+        trainingSpots: MutableList<Location>
 ) {
     var availableGold = gold;
     var availableIncome = income;
     var consumedTrainingSpots = mutableListOf<Location>()
     var canDoMoreActions = true
     var moveActions = actions.map { Location(it.x, it.y) }
+    trainingSpots.sortBy { abs(it.x - it.y) }
 
-    while (availableGold > 0 && canDoMoreActions) {
+    // TODO enable placing minions that can destroy lower level things
+    trainingSpots.map { Pair(trainingSpots, board[it.y][it.x].piece) }
+
+    while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
         val mineCost = 20 + builtMines.count() * 4
 
         if (availableGold > mineCost) {
-            val possibleMineLocation = mines.filter { !builtMines.contains(it) }
+            val possibleMineLocation = mines.filterNot { builtMines.contains(it) }
                     .map { board[it.y][it.x] }
+                    .filter { it.piece == null }
                     .filter { it.ownership == 1 || it.ownership == 2 }
                     .filterNot { it.piece != null }
                     .firstOrNull()
@@ -224,11 +229,11 @@ fun useGold(
         }
 
         // Exclude spots we've just moved to
-        val trainingSpot = trainingSpots.firstOrNull { !consumedTrainingSpots.contains(it) }
+        val trainingSpot = trainingSpots.filterNot { consumedTrainingSpots.contains(it) }.firstOrNull()
         if (trainingSpot != null) {
-            val unitLevel = if (availableGold > 100) 3 else if (availableGold > 50) 2 else 1
-
-            availableGold = availableGold - StarterUtils.pieceCost(unitLevel)
+            // 100 & 50 for rank ~100
+            val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20 ) 2 else 1
+            availableIncome = availableIncome - StarterUtils.pieceCost(unitLevel)
             actions += TrainAction(unitLevel, trainingSpot.x, trainingSpot.y)
             consumedTrainingSpots.add(trainingSpot)
         } else {

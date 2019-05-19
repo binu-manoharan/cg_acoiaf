@@ -177,12 +177,12 @@ internal class StarterKtTest {
         val actions = mutableListOf<Action>()
         useGold(
                 7,
-                0,
+                2,
                 mutableListOf(),
                 emptyList(),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 0))
+                mutableListOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
                 actions,
@@ -195,12 +195,12 @@ internal class StarterKtTest {
         actions.clear()
         useGold(
                 20,
-                1,
+                2,
                 mutableListOf(),
                 emptyList(),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 0))
+                mutableListOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
                 actions,
@@ -232,12 +232,12 @@ internal class StarterKtTest {
         val actions = mutableListOf<Action>()
         useGold(
                 30,
-                0,
+                2,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 1))
+                mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
                 actions,
@@ -252,12 +252,12 @@ internal class StarterKtTest {
         actions.clear()
         useGold(
                 161,
-                0,
+                100,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 1))
+                mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
                 actions,
@@ -291,12 +291,12 @@ internal class StarterKtTest {
         actions += MoveAction(1, 2, 0)
         useGold(
                 30,
-                0,
+                2,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
                 actions,
-                listOf(Location(0, 1), Location(1, 1))
+                mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
                 actions,
