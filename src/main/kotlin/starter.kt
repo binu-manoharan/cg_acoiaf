@@ -207,8 +207,7 @@ fun useGold(
     var moveActions = actions.map { Location(it.x, it.y) }
     trainingSpots.sortBy { abs(it.x - it.y) }
 
-    // TODO enable placing minions that can destroy lower level things
-    trainingSpots.map { Pair(trainingSpots, board[it.y][it.x].piece) }
+    val trainingSpotWithPieces = trainingSpots.map { Pair(it, board[it.y][it.x].piece) }
 
     while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
         val mineCost = 20 + builtMines.count() * 4
@@ -229,13 +228,23 @@ fun useGold(
         }
 
         // Exclude spots we've just moved to
-        val trainingSpot = trainingSpots.filterNot { consumedTrainingSpots.contains(it) }.firstOrNull()
+        val trainingSpot = trainingSpotWithPieces.filterNot { consumedTrainingSpots.contains(it.first) }.firstOrNull()
         if (trainingSpot != null) {
             // 100 & 50 for rank ~100
-            val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20 ) 2 else 1
-            availableIncome = availableIncome - StarterUtils.pieceCost(unitLevel)
-            actions += TrainAction(unitLevel, trainingSpot.x, trainingSpot.y)
-            consumedTrainingSpots.add(trainingSpot)
+            if (trainingSpot.second == null) {
+                val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20) 2 else 1
+                availableIncome -= StarterUtils.pieceCost(unitLevel)
+                actions += TrainAction(unitLevel, trainingSpot.first.x, trainingSpot.first.y)
+            } else {
+                if (trainingSpot.second!!.level == 1 ) {
+                    availableIncome -= StarterUtils.pieceCost(2)
+                    actions += TrainAction(2, trainingSpot.first.x, trainingSpot.first.y)
+                } else {
+                    availableIncome -= StarterUtils.pieceCost(3)
+                    actions += TrainAction(3, trainingSpot.first.x, trainingSpot.first.y)
+                }
+            }
+            consumedTrainingSpots.add(trainingSpot.first)
         } else {
             canDoMoreActions = false
         }
