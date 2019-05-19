@@ -12,6 +12,7 @@ data class Location(val x: Int, val y: Int)
 data class Cell(val x: Int, val y: Int, var ownership: Int, var piece: Piece? = null) {
     // doesn't account for holes in the map!
     fun distance(other: Cell) = abs(x - other.x) + abs(y - other.y)
+
     fun distance(xx: Int, yy: Int) = abs(x - xx) + abs(y - yy)
 }
 
@@ -104,8 +105,6 @@ fun main(args: Array<String>) {
                 builtMines.add(Location(x, y))
             }
         }
-//        err.println("My HQ $myHQ")
-//        err.println("Enemy HQ $enemyHQ")
 
         repeat(input.nextInt()) {
             val owner = input.nextInt()
@@ -118,7 +117,7 @@ fun main(args: Array<String>) {
         }
 
         val actions = mutableListOf<IAction>()
-
+//        TODO Move better to ensure they can move in a line add tests possibly
         val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
         myPiecesCells.map {
             Pair(it, bestValueMove(it, enemyHQ, boardCells))
@@ -127,29 +126,31 @@ fun main(args: Array<String>) {
             it.first.piece = null
         }
 
+//        TODO Add more training locations
         val trainingSpot = boardCells
                 .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
         err.println("Training $trainingSpot")
 
-
-        if (gold > 40) {
-            mines.filterNot { builtMines.contains(it)}
-                    .map { board[it.y][it.x] }
-                    .filter { it.ownership == 1 || it.ownership == 2 }
-                    .filterNot { it.piece != null }
-                    .firstOrNull {
-                        actions.add(BuildAction(it.x, it.y))
-                    }
-        }
 
         val myPiecesCost = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
 
         // If we have enough cash, build a new piece!
         val numPieces = myPiecesCells.size
         if (gold > 10 && trainingSpot != null && numPieces < 5) {
-            actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
-        } else if (income - myPiecesCost - numPieces > 0 && trainingSpot != null) {
-            actions += TrainAction(2, trainingSpot.x, trainingSpot.y)
+            actions += TrainAction(1, 0, 1)
+        } else if (income - myPiecesCost - numPieces > 10 && trainingSpot != null) {
+//          TODO Add better logic for training people
+            actions += TrainAction(2, 0, 1)
+        }
+
+        if (gold > 40) {
+            mines.filterNot { builtMines.contains(it) }
+                    .map { board[it.y][it.x] }
+                    .filter { it.ownership == 1 || it.ownership == 2 }
+                    .filterNot { it.piece != null }
+                    .firstOrNull {
+                        actions.add(BuildAction(it.x, it.y))
+                    }
         }
 
         if (actions.any()) {
