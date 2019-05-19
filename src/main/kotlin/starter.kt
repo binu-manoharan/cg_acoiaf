@@ -46,8 +46,8 @@ data class TrainAction(val level: Int, override val x: Int, override val y: Int)
     override fun toString() = "TRAIN $level $x $y"
 }
 
-data class BuildAction(override val x: Int, override val y: Int) : IAction {
-    override fun toString() = "BUILD MINE $x $y"
+data class BuildAction(val type: Int, override val x: Int, override val y: Int) : IAction {
+    override fun toString() = if (type == 1) "BUILD MINE $x $y" else "BUILD TOWER $x $y"
 }
 
 class StarterUtils {
@@ -218,7 +218,7 @@ fun useGold(
             if (possibleMineLocation != null) {
                 availableGold -= mineCost
                 builtMines.add(Location(possibleMineLocation.x, possibleMineLocation.y))
-                actions.add(BuildAction(possibleMineLocation.x, possibleMineLocation.y))
+                actions.add(BuildAction(1, possibleMineLocation.x, possibleMineLocation.y))
             }
         }
 

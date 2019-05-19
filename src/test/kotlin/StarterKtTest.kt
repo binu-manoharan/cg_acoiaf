@@ -242,7 +242,7 @@ internal class StarterKtTest {
         assertThat(
                 actions,
                 allOf(
-                        hasItem(BuildAction(1, 0)),
+                        hasItem(BuildAction(1, 1, 0)),
                         hasItem(TrainAction(1, 0, 1)),
                         hasItem(TrainAction(1, 1, 1))
                 )
@@ -262,7 +262,7 @@ internal class StarterKtTest {
         assertThat(
                 actions,
                 allOf(
-                        hasItem(BuildAction(1, 0)),
+                        hasItem(BuildAction(1, 1, 0)),
                         hasItem(TrainAction(3, 0, 1)),
                         hasItem(TrainAction(3, 1, 1))
                 )
@@ -302,7 +302,7 @@ internal class StarterKtTest {
                 actions,
                 allOf(
                         hasItem(MoveAction(1, 2, 0)),
-                        hasItem(BuildAction(1, 0)),
+                        hasItem(BuildAction(1, 1, 0)),
                         hasItem(TrainAction(1, 0, 1)),
                         hasItem(TrainAction(1, 1, 1))
                 )
