@@ -33,20 +33,20 @@ data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
     }
 }
 
-interface IAction {
+interface Action {
     val x: Int
     val y: Int
 }
 
-data class MoveAction(val id: Int, override val x: Int, override val y: Int) : IAction {
+data class MoveAction(val id: Int, override val x: Int, override val y: Int) : Action {
     override fun toString() = "MOVE $id $x $y"
 }
 
-data class TrainAction(val level: Int, override val x: Int, override val y: Int) : IAction {
+data class TrainAction(val level: Int, override val x: Int, override val y: Int) : Action {
     override fun toString() = "TRAIN $level $x $y"
 }
 
-data class BuildAction(val type: Int, override val x: Int, override val y: Int) : IAction {
+data class BuildAction(val type: Int, override val x: Int, override val y: Int) : Action {
     override fun toString() = if (type == 1) "BUILD MINE $x $y" else "BUILD TOWER $x $y"
 }
 
@@ -142,7 +142,7 @@ fun main(args: Array<String>) {
             cell.piece = Piece(unitId, owner == 0, level)
         }
 
-        val actions = mutableListOf<IAction>()
+        val actions = mutableListOf<Action>()
         generateActions(
                 boardCells,
                 enemyHQ,
@@ -162,17 +162,16 @@ fun main(args: Array<String>) {
     }
 }
 
-private fun generateActions(
+fun generateActions(
         boardCells: List<Cell>,
         enemyHQ: Cell,
-        actions: MutableList<IAction>,
+        actions: MutableList<Action>,
         builtMines: MutableList<Location>,
         gold: Int,
         income: Int,
         mines: List<Location>,
         board: List<List<Cell>>
 ) {
-    //        TODO Move better to ensure they can move in a line add tests possibly
 //        TODO fix conflict between move and train as well - apply actions to board state
     val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
     myPiecesCells.map {
@@ -181,6 +180,8 @@ private fun generateActions(
         actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
         it.first.piece = null
     }
+
+    actions.sortBy { - it.x - it.y }
 
     val trainingSpots = getAllTrainingSpots(
             boardCells,
@@ -196,7 +197,7 @@ fun useGold(
         builtMines: MutableList<Location>,
         mines: List<Location>,
         board: List<List<Cell>>,
-        actions: MutableList<IAction>,
+        actions: MutableList<Action>,
         trainingSpots: List<Location>
 ) {
     var availableGold = gold;

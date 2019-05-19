@@ -105,9 +105,9 @@ internal class StarterKtTest {
                 "The training spots should be 2,0 0,1 and 1,1",
                 allTrainingSpots10,
                 allOf(
-                        hasItem(Location(2,0)),
-                        hasItem(Location(1,1)),
-                        hasItem(Location(0,1))
+                        hasItem(Location(2, 0)),
+                        hasItem(Location(1, 1)),
+                        hasItem(Location(0, 1))
                 )
         )
         assertThat(allTrainingSpots10, hasSize(3))
@@ -174,7 +174,7 @@ internal class StarterKtTest {
     @Test
     internal fun test_use_gold_creates_troops() {
         val testBoard = GameData.emptyBoard()
-        val actions = mutableListOf<IAction>()
+        val actions = mutableListOf<Action>()
         useGold(
                 7,
                 0,
@@ -229,7 +229,7 @@ internal class StarterKtTest {
                 Cell(10, 0, 0, null),
                 Cell(11, 0, 0, null)
         )
-        val actions = mutableListOf<IAction>()
+        val actions = mutableListOf<Action>()
         useGold(
                 30,
                 0,
@@ -287,7 +287,7 @@ internal class StarterKtTest {
                 Cell(10, 0, 0, null),
                 Cell(11, 0, 0, null)
         )
-        val actions = mutableListOf<IAction>()
+        val actions = mutableListOf<Action>()
         actions += MoveAction(1, 2, 0)
         useGold(
                 30,
@@ -308,5 +308,53 @@ internal class StarterKtTest {
                 )
         )
         assertThat(actions, hasSize(4))
+    }
+
+    @Test
+    internal fun generate_sequential_move_actions() {
+        val testBoard = GameData.emptyBoard().toMutableList()
+        testBoard[0] = listOf(
+                Cell(0, 0, 2, null),
+                Cell(1, 0, 1, Piece(1, true, 1)),
+                Cell(2, 0, 1, Piece(2, true, 1)),
+                Cell(3, 0, 1, Piece(3, true, 1)),
+                Cell(4, 0, 0, null),
+                Cell(5, 0, 0, null),
+                Cell(6, 0, 0, null),
+                Cell(7, 0, 0, null),
+                Cell(8, 0, 0, null),
+                Cell(9, 0, 0, null),
+                Cell(10, 0, 0, null),
+                Cell(11, 0, 0, null)
+        )
+        testBoard[1] = listOf(
+                Cell(0, 0, 99, null),
+                Cell(1, 0, 99, null),
+                Cell(2, 0, 99, null),
+                Cell(3, 0, 99, null),
+                Cell(4, 0, 99, null),
+                Cell(5, 0, 99, null),
+                Cell(6, 0, 99, null),
+                Cell(7, 0, 99, null),
+                Cell(8, 0, 99, null),
+                Cell(9, 0, 99, null),
+                Cell(10, 0, 99, null),
+                Cell(11, 0, 0, null)
+        )
+
+        var actions = mutableListOf<Action>()
+        generateActions(
+                testBoard.flatten(),
+                testBoard[11][11],
+                actions,
+                mutableListOf(),
+                0,
+                0,
+                emptyList(),
+                testBoard
+        )
+        assertThat(actions.get(0) as MoveAction, `is`(MoveAction(3, 4, 0)))
+        assertThat(actions.get(1) as MoveAction, `is`(MoveAction(2, 3, 0)))
+        assertThat(actions.get(2) as MoveAction, `is`(MoveAction(1, 2, 0)))
     }
 }
