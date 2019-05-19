@@ -126,17 +126,7 @@ fun main(args: Array<String>) {
         }
 
         val actions = mutableListOf<IAction>()
-//        TODO Move better to ensure they can move in a line add tests possibly
-        val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
-        myPiecesCells.map {
-            Pair(it, bestValueMove(it, enemyHQ, boardCells))
-        }.forEach {
-            actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
-            it.first.piece = null
-        }
-
-        val trainingSpots = getAllTrainingSpots(boardCells, builtMines)
-        useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
+        generateActions(boardCells, enemyHQ, actions, builtMines, gold, income, mines, board)
 
         if (actions.any()) {
             println(actions.joinToString(";"))
@@ -144,6 +134,31 @@ fun main(args: Array<String>) {
             println("WAIT")
         }
     }
+}
+
+private fun generateActions(
+        boardCells: List<Cell>,
+        enemyHQ: Cell,
+        actions: MutableList<IAction>,
+        builtMines: MutableList<Location>,
+        gold: Int,
+        income: Int,
+        mines: List<Location>,
+        board: List<List<Cell>>
+) {
+    //        TODO Move better to ensure they can move in a line add tests possibly
+//        TODO fix conflict between move and train as well - apply actions to board state
+    val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
+    myPiecesCells.map {
+        Pair(it, bestValueMove(it, enemyHQ, boardCells))
+    }.forEach {
+        actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
+        it.first.piece = null
+    }
+
+    val trainingSpots = getAllTrainingSpots(boardCells, builtMines)
+    err.println(trainingSpots)
+    useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
 }
 
 fun useGold(
@@ -157,10 +172,11 @@ fun useGold(
 ) {
     var availableGold = gold;
     var availableIncome = income;
+    var consumedTrainingSpots = mutableListOf<Location>()
+    var canDoMoreActions = true
 
-    while (availableGold > 5) {
+    while (availableGold > 5 && canDoMoreActions) {
         val mineCost = 20 + builtMines.count() * 4
-        var consumedTrainingSpots = mutableListOf<Location>()
 
         if (availableGold > mineCost) {
             mines.filterNot { builtMines.contains(it) }
@@ -174,13 +190,15 @@ fun useGold(
                     }
         }
 
-        trainingSpots.filterNot { consumedTrainingSpots.contains(it) }
-                .any {
-                    availableGold--
-                    consumedTrainingSpots.add(Location(it.x, it.y))
-                    actions += TrainAction(1, it.x, it.y)
-                    return
-                }
+        // Exclude spots we've just moved to
+        val trainingSpot = trainingSpots.firstOrNull { !consumedTrainingSpots.contains(it) }
+        if (trainingSpot != null) {
+            availableGold--
+            actions += TrainAction(1, trainingSpot.x, trainingSpot.y)
+            consumedTrainingSpots.add(trainingSpot)
+        } else {
+            canDoMoreActions = false
+        }
     }
 }
 
@@ -209,7 +227,7 @@ fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>
     return flatBoard.filter {
         allNeighborsToOwningCells.contains(Location(it.x, it.y))
     }.filterNot {
-        it.ownership == 1 || it.ownership == 2
+        it.ownership > 0
     }.map {
         Location(it.x, it.y)
     }.filterNot { buildingLocations.contains(it) }

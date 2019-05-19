@@ -76,7 +76,7 @@ internal class StarterKtTest {
         testBoard[0] = listOf(
                 Cell(0, 0, 2, null),
                 Cell(1, 0, 2, null),
-                Cell(2, 0, 0, null),
+                Cell(2, 0, 99, null),
                 Cell(3, 0, 0, null),
                 Cell(4, 0, 0, null),
                 Cell(5, 0, 0, null),
@@ -88,9 +88,12 @@ internal class StarterKtTest {
                 Cell(11, 0, 0, null)
         )
         assertThat(
-                "There should be 3 trainig spots - 1,0 is a building location",
+                "There should be 2 trainig spots - 1,0 is a building location, 2,0 is void",
                 getAllTrainingSpots(testBoard.flatten(), emptyList()),
-                hasSize(3)
+                containsInAnyOrder(
+                        Location(0,1),
+                        Location(1,1)
+                )
         )
     }
 
@@ -130,6 +133,24 @@ internal class StarterKtTest {
         useGold(
                 7,
                 0,
+                mutableListOf(),
+                emptyList(),
+                testBoard,
+                actions,
+                listOf(Location(0, 1), Location(1,0))
+        )
+        assertThat(
+                "There are two train actions",
+                actions,
+                anyOf(
+                        hasItem(TrainAction(1, 1, 0)),
+                        hasItem(TrainAction(1, 0, 1))
+                )
+        )
+
+        useGold(
+                20,
+                1,
                 mutableListOf(),
                 emptyList(),
                 testBoard,
