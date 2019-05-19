@@ -1,3 +1,6 @@
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.MatcherAssert.assertThat
+import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.util.*
@@ -11,9 +14,9 @@ internal class StarterKtTest {
         val level1 = starterUtils.calculateCost(singletonList(Piece(1, true, 1)));
         val level2 = starterUtils.calculateCost(singletonList(Piece(1, true, 2)));
         val level3 = starterUtils.calculateCost(singletonList(Piece(1, true, 3)));
-        assertEquals(level1, 1, "Piece cost is 1")
-        assertEquals(level2, 4, "Piece cost is 4")
-        assertEquals(level3, 20, "Piece cost is 20")
+        assertThat("Piece cost is 1", level1, `is`(1))
+        assertThat("Piece cost is 4", level2, `is`(4))
+        assertThat("Piece cost is 20", level3, `is`(20))
 
         val allThree = starterUtils.calculateCost(
                 Arrays.asList(
@@ -22,7 +25,7 @@ internal class StarterKtTest {
                         Piece(1, true, 3)
                 )
         )
-        assertEquals(allThree, 25, "Total piece cost is 25")
+        assertThat("Total piece cost is 25", allThree, `is`(25))
     }
 
     @Test
@@ -51,6 +54,42 @@ internal class StarterKtTest {
 
         val bestValueMove = bestValueMove(myPiece, enemyHQ, flatBoard)
         println("best move $bestValueMove")
+    }
+
+    @Test
+    internal fun all_training_spots() {
+        val testBoard = GameData.emptyBoard()
+        val allTrainingSpots = getAllTrainingSpots(testBoard.flatten())
+        assertThat("There should be 2 trainig spots on an empty board", allTrainingSpots, hasSize(2))
+    }
+
+    @Test
+    internal fun test_nearby_location() {
+        assertThat("There are two neighbours",
+                Location(0, 0).getNeighbours(),
+                containsInAnyOrder(
+                        Location(1,0),
+                        Location(0, 1)
+                )
+        )
+
+        assertThat("There are two neighbours",
+                Location(11, 11).getNeighbours(),
+                containsInAnyOrder(
+                        Location(11,10),
+                        Location(10, 11)
+                )
+        )
+
+        assertThat("There are two neighbours",
+                Location(5, 5).getNeighbours(),
+                containsInAnyOrder(
+                        Location(5,4),
+                        Location(5,6),
+                        Location(4,5),
+                        Location(6, 5)
+                )
+        )
     }
 }
 

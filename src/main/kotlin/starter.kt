@@ -7,9 +7,18 @@ import kotlin.math.abs
  * the standard input according to the problem statement.
  **/
 
-data class Location(val x: Int, val y: Int)
+data class Location(val x: Int, val y: Int) {
+    fun getNeighbours(): List<Location> {
+        return listOf(
+            Location(x - 1, y),
+            Location(x + 1, y),
+            Location(x, y - 1),
+            Location(x, y + 1)
+        ).filter { it.x >= 0 && it.x <=11 && it.y >= 0 && it.y <= 11 }
+    }
+}
 
-data class Cell(val x: Int, val y: Int, var ownership: Int, var piece: Piece? = null) {
+data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = null) {
     // doesn't account for holes in the map!
     fun distance(other: Cell) = abs(x - other.x) + abs(y - other.y)
 
@@ -126,37 +135,47 @@ fun main(args: Array<String>) {
             it.first.piece = null
         }
 
-//        TODO Add more training locations
-        val trainingSpot = boardCells
-                .firstOrNull { it.distance(myHQ) == 1 && it.piece == null }
-        err.println("Training $trainingSpot")
-
-
-        val myPiecesCost = utils.calculateCost(myPiecesCells.map { it.piece }.filterNotNull())
-
-        // If we have enough cash, build a new piece!
-        val numPieces = myPiecesCells.size
-        if (gold > 10 && trainingSpot != null && numPieces < 5) {
-            actions += TrainAction(1, 0, 1)
-        } else if (income - myPiecesCost - numPieces > 10 && trainingSpot != null) {
-//          TODO Add better logic for training people
-            actions += TrainAction(2, 0, 1)
-        }
-
-        if (gold > 40) {
-            mines.filterNot { builtMines.contains(it) }
-                    .map { board[it.y][it.x] }
-                    .filter { it.ownership == 1 || it.ownership == 2 }
-                    .filterNot { it.piece != null }
-                    .firstOrNull {
-                        actions.add(BuildAction(it.x, it.y))
-                    }
-        }
+        val trainingSpots = getAllTrainingSpots(boardCells)
+        useGold(gold, income, builtMines, mines, board, actions, trainingSpots)
 
         if (actions.any()) {
             println(actions.joinToString(";"))
         } else {
             println("WAIT")
+        }
+    }
+}
+
+private fun useGold(
+        gold: Int,
+        income: Int,
+        builtMines: MutableList<Location>,
+        mines: List<Location>,
+        board: List<List<Cell>>,
+        actions: MutableList<IAction>,
+        trainingSpots: List<Location>
+) {
+    var availableGold = gold;
+    var availableIncome = income;
+
+    while (availableGold > 5 && availableIncome > 5) {
+        val mineCost = 20 + builtMines.count() * 4
+
+        if (availableGold > mineCost) {
+            mines.filterNot { builtMines.contains(it) }
+                    .map { board[it.y][it.x] }
+                    .filter { it.ownership == 1 || it.ownership == 2 }
+                    .filterNot { it.piece != null }
+                    .firstOrNull {
+                        availableGold -= mineCost
+                        builtMines.add(Location(it.x, it.y))
+                        actions.add(BuildAction(it.x, it.y))
+                    }
+
+            trainingSpots.any {
+                actions += TrainAction(1, it.x, it.y)
+                return
+            }
         }
     }
 }
@@ -175,4 +194,19 @@ fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
         val distanceScore = if (distanceToEnemyHQ == 1) -100 else distanceToEnemyHQ
         100 - it.ownership - distanceScore
     }!!
+}
+
+fun getAllTrainingSpots(flatBoard: List<Cell>): List<Location> {
+    val allNeighborsToOwningCells = flatBoard.filter { it.ownership == 1 || it.ownership == 2 }
+            .map { Location(it.x, it.y) }
+            .map { it.getNeighbours() }
+            .flatten()
+
+    return flatBoard.filter {
+        allNeighborsToOwningCells.contains(Location(it.x, it.y))
+    }.filter {
+        it.ownership != 1 || it.ownership !=2
+    }.map {
+        Location(it.x, it.y)
+    }
 }
