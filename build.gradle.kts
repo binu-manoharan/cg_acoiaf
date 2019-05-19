@@ -11,7 +11,8 @@ plugins {
 }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("org.junit.jupiter:junit-jupiter-engine:5.0.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.0.0")
+    testImplementation("org.hamcrest:hamcrest-library:2.1")
 }
 repositories {
     mavenCentral()
