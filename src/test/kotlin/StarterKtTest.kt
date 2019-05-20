@@ -334,13 +334,15 @@ internal class StarterKtTest {
 
         val actions = generateActions(
                 testBoard,
-                0,
-                0,
                 emptyList(),
                 listOf(
                         Building(0,0,0,0),
                         Building(1,0,11,11)
-                )
+                ),
+                0,
+                0,
+                0,
+                0
         )
         assertThat(actions.get(0) as MoveAction, `is`(MoveAction(3, 4, 0)))
         assertThat(actions.get(1) as MoveAction, `is`(MoveAction(2, 3, 0)))
