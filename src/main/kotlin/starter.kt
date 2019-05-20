@@ -62,7 +62,154 @@ fun calculateCost(pieces: List<Piece>) = pieces.map { it.pieceCost() }.sum()
 
 fun pieceCost(level: Int) = if (level == 1) 1 else if (level == 2) 4 else 20
 
-private val VOID_CELL_VALUE = 99
+private const val VOID_CELL_VALUE = 99
+
+interface ActionGenerator {
+    fun generateActions(
+            board: List<List<Cell>>,
+            mines: List<Location>,
+            buildings: List<Building>,
+            myGold: Int,
+            myIncome: Int,
+            opponentGold: Int,
+            opponentIncome: Int
+    ): List<Action>
+}
+
+class BronzeLeagueActionGenerator: ActionGenerator {
+    override fun generateActions(
+            board: List<List<Cell>>,
+            mines: List<Location>,
+            buildings: List<Building>,
+            myGold: Int,
+            myIncome: Int,
+            opponentGold: Int,
+            opponentIncome: Int
+    ): List<Action> {
+        val myHQ = buildings.filter { it.buildingType == 0 && it.owner == 0 }.map { board[it.y][it.x] }.first()
+        val opponentHQ = buildings.filter { it.buildingType == 0 && it.owner == 1 }.map { board[it.y][it.x] }.first()
+        val builtMinesLocations = buildings.filter { it.buildingType == 1 }
+                .map { Location(it.x, it.y) }
+        val boardCells = board.flatten().filterNot { it.ownership == VOID_CELL_VALUE }
+        val actions = mutableListOf<Action>()
+
+//        TODO fix conflict between move and train as well - apply actions to board state
+        boardCells.filter { it.piece?.isFriendly == true }
+                .map {
+                    Pair(it, bestValueMove(it, opponentHQ, boardCells))
+                }.forEach {
+                    //        TODO remove actions where the current piece cannot kill opponent
+                    actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
+                    it.first.piece = null
+                }
+
+        actions.sortBy { -it.x - it.y }
+
+        val trainingSpots = getAllTrainingSpots(
+                boardCells,
+                builtMinesLocations,
+                actions.map { Location(it.x, it.y) }
+        )
+        actions += useGold(myGold, myIncome, builtMinesLocations, mines, board, trainingSpots.toMutableList())
+        return actions
+    }
+
+    fun useGold(
+            gold: Int,
+            income: Int,
+            builtMines: List<Location>,
+            mines: List<Location>,
+            board: List<List<Cell>>,
+            trainingSpots: MutableList<Location>
+    ): List<Action> {
+        var availableGold = gold;
+        var availableIncome = income;
+        val consumedTrainingSpots = mutableListOf<Location>()
+        val actions = mutableListOf<Action>()
+        val mineLocation = builtMines.toMutableList()
+        var canDoMoreActions = true
+
+        trainingSpots.sortBy { abs(it.x - it.y) }
+
+        val trainingSpotWithPieces = trainingSpots.map { Pair(it, board[it.y][it.x].piece) }
+                .sortedBy { it.second != null }
+                .reversed()
+
+        while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
+            val mineCost = 20 + mineLocation.count() * 4
+
+            if (availableGold > mineCost) {
+                val possibleMineLocation = mines.filterNot { mineLocation.contains(it) }
+                        .map { board[it.y][it.x] }
+                        .filter { it.piece == null }
+                        .filter { it.ownership == 1 || it.ownership == 2 }
+                        .filterNot { it.piece != null }
+                        .firstOrNull()
+
+                if (possibleMineLocation != null) {
+                    availableGold -= mineCost
+                    mineLocation += Location(possibleMineLocation.x, possibleMineLocation.y)
+                    actions += BuildAction(1, possibleMineLocation.x, possibleMineLocation.y)
+                }
+            }
+
+            // Exclude spots we've just moved to
+            val trainingSpot = trainingSpotWithPieces.filterNot { consumedTrainingSpots.contains(it.first) }.firstOrNull()
+            if (trainingSpot != null) {
+                // 100 & 50 for rank ~100
+                if (trainingSpot.second == null) {
+                    val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20) 2 else 1
+                    availableIncome -= pieceCost(unitLevel)
+                    actions += TrainAction(unitLevel, trainingSpot.first.x, trainingSpot.first.y)
+                } else {
+                    if (trainingSpot.second!!.level == 1) {
+                        availableIncome -= pieceCost(2)
+                        actions += TrainAction(2, trainingSpot.first.x, trainingSpot.first.y)
+                    } else {
+                        availableIncome -= pieceCost(3)
+                        actions += TrainAction(3, trainingSpot.first.x, trainingSpot.first.y)
+                    }
+                }
+                consumedTrainingSpots.add(trainingSpot.first)
+            } else {
+                canDoMoreActions = false
+            }
+        }
+        return actions
+    }
+
+    fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
+        val possibleMoves = flatBoard.filterNot {
+            it.ownership > 10
+        }.filter {
+            (it.x == myPiece.x - 1 && it.y == myPiece.y && it.x > 0) ||
+                    (it.x == myPiece.x + 1 && it.y == myPiece.y && it.x < 12) ||
+                    (it.x == myPiece.x && it.y == myPiece.y - 1 && it.y > 0) ||
+                    (it.x == myPiece.x && it.y == myPiece.y + 1 && it.y < 12)
+        }
+        return possibleMoves.maxBy {
+            val distanceToEnemyHQ = it.distance(enemyHQ)
+            val distanceScore = if (distanceToEnemyHQ == 1) -100 else distanceToEnemyHQ
+            100 - it.ownership - distanceScore
+        }!!
+    }
+
+    fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>, moveActions: List<Location>): List<Location> {
+        val allNeighborsToOwningCells = flatBoard.filter {
+            it.ownership == 1 || it.ownership == 2 || moveActions.contains(Location(it.x, it.y))
+        }.map { Location(it.x, it.y) }
+                .map { it.getNeighbours() }
+                .flatten()
+
+        return flatBoard.filter {
+            allNeighborsToOwningCells.contains(Location(it.x, it.y))
+        }.filterNot {
+            it.ownership > 0 || moveActions.contains(Location(it.x, it.y))
+        }.map {
+            Location(it.x, it.y)
+        }.filterNot { buildingLocations.contains(it) }
+    }
+}
 
 fun main(args: Array<String>) {
     val input = Scanner(System.`in`)
@@ -117,7 +264,8 @@ fun main(args: Array<String>) {
             cell.piece = Piece(unitId, owner == 0, level)
         }
 
-        val actions = generateActions(
+        val actionGenerator = BronzeLeagueActionGenerator()
+        val actions = actionGenerator.generateActions(
                 board,
                 mines,
                 buildings.toList(),
@@ -135,136 +283,3 @@ fun main(args: Array<String>) {
     }
 }
 
-fun generateActions(
-        board: List<List<Cell>>,
-        mines: List<Location>,
-        buildings: List<Building>,
-        myGold: Int,
-        myIncome: Int,
-        opponentGold: Int,
-        opponentIncome: Int
-): List<Action> {
-
-    val myHQ = buildings.filter { it.buildingType == 0 && it.owner == 0 }.map { board[it.y][it.x] }.first()
-    val opponentHQ = buildings.filter { it.buildingType == 0 && it.owner == 1 }.map { board[it.y][it.x] }.first()
-    val builtMinesLocations = buildings.filter { it.buildingType == 1 }
-            .map { Location(it.x, it.y) }
-    val boardCells = board.flatten().filterNot { it.ownership == VOID_CELL_VALUE }
-    val actions = mutableListOf<Action>()
-
-//        TODO fix conflict between move and train as well - apply actions to board state
-    boardCells.filter { it.piece?.isFriendly == true }
-            .map {
-                Pair(it, bestValueMove(it, opponentHQ, boardCells))
-            }.forEach {
-                //        TODO remove actions where the current piece cannot kill opponent
-                actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
-                it.first.piece = null
-            }
-
-    actions.sortBy { -it.x - it.y }
-
-    val trainingSpots = getAllTrainingSpots(
-            boardCells,
-            builtMinesLocations,
-            actions.map { Location(it.x, it.y) }
-    )
-    actions += useGold(myGold, myIncome, builtMinesLocations, mines, board, trainingSpots.toMutableList())
-    return actions
-}
-
-fun useGold(
-        gold: Int,
-        income: Int,
-        builtMines: List<Location>,
-        mines: List<Location>,
-        board: List<List<Cell>>,
-        trainingSpots: MutableList<Location>
-): List<Action> {
-    var availableGold = gold;
-    var availableIncome = income;
-    val consumedTrainingSpots = mutableListOf<Location>()
-    val actions = mutableListOf<Action>()
-    val mineLocation = builtMines.toMutableList()
-    var canDoMoreActions = true
-
-    trainingSpots.sortBy { abs(it.x - it.y) }
-
-    val trainingSpotWithPieces = trainingSpots.map { Pair(it, board[it.y][it.x].piece) }
-            .sortedBy { it.second != null }
-            .reversed()
-
-    while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
-        val mineCost = 20 + mineLocation.count() * 4
-
-        if (availableGold > mineCost) {
-            val possibleMineLocation = mines.filterNot { mineLocation.contains(it) }
-                    .map { board[it.y][it.x] }
-                    .filter { it.piece == null }
-                    .filter { it.ownership == 1 || it.ownership == 2 }
-                    .filterNot { it.piece != null }
-                    .firstOrNull()
-
-            if (possibleMineLocation != null) {
-                availableGold -= mineCost
-                mineLocation += Location(possibleMineLocation.x, possibleMineLocation.y)
-                actions += BuildAction(1, possibleMineLocation.x, possibleMineLocation.y)
-            }
-        }
-
-        // Exclude spots we've just moved to
-        val trainingSpot = trainingSpotWithPieces.filterNot { consumedTrainingSpots.contains(it.first) }.firstOrNull()
-        if (trainingSpot != null) {
-            // 100 & 50 for rank ~100
-            if (trainingSpot.second == null) {
-                val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20) 2 else 1
-                availableIncome -= pieceCost(unitLevel)
-                actions += TrainAction(unitLevel, trainingSpot.first.x, trainingSpot.first.y)
-            } else {
-                if (trainingSpot.second!!.level == 1) {
-                    availableIncome -= pieceCost(2)
-                    actions += TrainAction(2, trainingSpot.first.x, trainingSpot.first.y)
-                } else {
-                    availableIncome -= pieceCost(3)
-                    actions += TrainAction(3, trainingSpot.first.x, trainingSpot.first.y)
-                }
-            }
-            consumedTrainingSpots.add(trainingSpot.first)
-        } else {
-            canDoMoreActions = false
-        }
-    }
-    return actions
-}
-
-fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {
-    val possibleMoves = flatBoard.filterNot {
-        it.ownership > 10
-    }.filter {
-        (it.x == myPiece.x - 1 && it.y == myPiece.y && it.x > 0) ||
-                (it.x == myPiece.x + 1 && it.y == myPiece.y && it.x < 12) ||
-                (it.x == myPiece.x && it.y == myPiece.y - 1 && it.y > 0) ||
-                (it.x == myPiece.x && it.y == myPiece.y + 1 && it.y < 12)
-    }
-    return possibleMoves.maxBy {
-        val distanceToEnemyHQ = it.distance(enemyHQ)
-        val distanceScore = if (distanceToEnemyHQ == 1) -100 else distanceToEnemyHQ
-        100 - it.ownership - distanceScore
-    }!!
-}
-
-fun getAllTrainingSpots(flatBoard: List<Cell>, buildingLocations: List<Location>, moveActions: List<Location>): List<Location> {
-    val allNeighborsToOwningCells = flatBoard.filter {
-        it.ownership == 1 || it.ownership == 2 || moveActions.contains(Location(it.x, it.y))
-    }.map { Location(it.x, it.y) }
-            .map { it.getNeighbours() }
-            .flatten()
-
-    return flatBoard.filter {
-        allNeighborsToOwningCells.contains(Location(it.x, it.y))
-    }.filterNot {
-        it.ownership > 0 || moveActions.contains(Location(it.x, it.y))
-    }.map {
-        Location(it.x, it.y)
-    }.filterNot { buildingLocations.contains(it) }
-}

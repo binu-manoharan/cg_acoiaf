@@ -5,7 +5,9 @@ import org.junit.jupiter.api.Test
 import java.util.Collections.singletonList
 import java.util.Arrays
 
-internal class StarterKtTest {
+internal class BronzeLeagueActionGeneratorTest {
+    val actionGenerator = BronzeLeagueActionGenerator()
+
     @Test
     internal fun piece_cost_should_be_1() {
         val level1 = calculateCost(singletonList(Piece(1, true, 1)));
@@ -49,7 +51,7 @@ internal class StarterKtTest {
         printBoard(testBoard)
         val flatBoard = testBoard.flatten()
 
-        val bestValueMove = bestValueMove(myPiece, enemyHQ, flatBoard)
+        val bestValueMove = actionGenerator.bestValueMove(myPiece, enemyHQ, flatBoard)
         println("best move $bestValueMove")
     }
 
@@ -59,13 +61,13 @@ internal class StarterKtTest {
         val moveActions = mutableListOf<Location>()
         assertThat(
                 "There should be 2 training spots on an empty board",
-                getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
+                actionGenerator.getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
                 hasSize(2)
         )
 
         assertThat(
                 "There should be 1 training spot - 1,0 is a building location",
-                getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1, 0)), moveActions),
+                actionGenerator.getAllTrainingSpots(testBoard.flatten(), singletonList(Location(1, 0)), moveActions),
                 hasSize(1)
         )
 
@@ -85,7 +87,7 @@ internal class StarterKtTest {
         )
         assertThat(
                 "There should be 2 training spots - 1,0 is a building location, 2,0 is void",
-                getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
+                actionGenerator.getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions),
                 containsInAnyOrder(
                         Location(0, 1),
                         Location(1, 1)
@@ -98,7 +100,7 @@ internal class StarterKtTest {
         val testBoard = GameData.emptyBoard().toMutableList()
         val moveActions = mutableListOf<Location>()
         moveActions += Location(1, 0)
-        val allTrainingSpots10 = getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions)
+        val allTrainingSpots10 = actionGenerator.getAllTrainingSpots(testBoard.flatten(), emptyList(), moveActions)
         assertThat(
                 "The training spots should be 2,0 0,1 and 1,1",
                 allTrainingSpots10,
@@ -172,7 +174,7 @@ internal class StarterKtTest {
     @Test
     internal fun test_use_gold_creates_troops() {
         val testBoard = GameData.emptyBoard()
-        val actions = useGold(
+        val actions = actionGenerator.useGold(
                 7,
                 2,
                 mutableListOf(),
@@ -189,7 +191,7 @@ internal class StarterKtTest {
         )
         assertThat(actions, hasSize(2))
 
-        val actions2 = useGold(
+        val actions2 = actionGenerator.useGold(
                 20,
                 2,
                 mutableListOf(),
@@ -224,7 +226,7 @@ internal class StarterKtTest {
                 Cell(10, 0, 0, null),
                 Cell(11, 0, 0, null)
         )
-        val actions = useGold(
+        val actions = actionGenerator.useGold(
                 30,
                 2,
                 mutableListOf(),
@@ -242,7 +244,7 @@ internal class StarterKtTest {
         )
         assertThat(actions, hasSize(3))
 
-        val actions2 = useGold(
+        val actions2 = actionGenerator.useGold(
                 161,
                 100,
                 mutableListOf(),
@@ -280,7 +282,7 @@ internal class StarterKtTest {
         )
         val actions = mutableListOf<Action>()
         actions += MoveAction(1, 2, 0)
-        actions += useGold(
+        actions += actionGenerator.useGold(
                 30,
                 2,
                 mutableListOf(),
@@ -332,7 +334,7 @@ internal class StarterKtTest {
                 Cell(11, 0, 0, null)
         )
 
-        val actions = generateActions(
+        val actions = actionGenerator.generateActions(
                 testBoard,
                 emptyList(),
                 listOf(
