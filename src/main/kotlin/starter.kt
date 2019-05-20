@@ -2,11 +2,6 @@ import java.lang.System.err
 import java.util.*
 import kotlin.math.abs
 
-/**
- * Auto-generated code below aims at helping you parse
- * the standard input according to the problem statement.
- **/
-
 data class Location(val x: Int, val y: Int) {
     fun getNeighbours(): List<Location> {
         return listOf(
@@ -14,7 +9,7 @@ data class Location(val x: Int, val y: Int) {
                 Location(x + 1, y),
                 Location(x, y - 1),
                 Location(x, y + 1)
-        ).filter { it.x >= 0 && it.x <= 11 && it.y >= 0 && it.y <= 11 }
+        ).filter { it.x in 0..11 && it.y in 0..11 }
     }
 }
 
@@ -29,7 +24,7 @@ data class Cell(val x: Int, val y: Int, val ownership: Int, var piece: Piece? = 
 
 data class Piece(val id: Int, val isFriendly: Boolean, val level: Int) {
     fun pieceCost(): Int {
-        return StarterUtils.pieceCost(this.level)
+        return pieceCost(this.level)
     }
 }
 
@@ -50,26 +45,18 @@ data class BuildAction(val type: Int, override val x: Int, override val y: Int) 
     override fun toString() = if (type == 1) "BUILD MINE $x $y" else "BUILD TOWER $x $y"
 }
 
-class StarterUtils {
-    fun calculateCost(pieces: List<Piece>): Int {
-        return pieces.map { it.pieceCost() }.sum()
-    }
-
-    fun printBoard(board: List<List<Cell>>) {
-        board.forEach { y ->
-            y.forEach {
-                err.printf("%3d", it.ownership)
-            }
-            err.println()
+fun printBoard(board: List<List<Cell>>) {
+    board.forEach { y ->
+        y.forEach {
+            err.printf("%3d", it.ownership)
         }
-    }
-
-    companion object {
-        fun pieceCost(level: Int): Int {
-            return if (level == 1) 1 else if (level == 2) 4 else 20
-        }
+        err.println()
     }
 }
+
+fun calculateCost(pieces: List<Piece>) = pieces.map { it.pieceCost() }.sum()
+
+fun pieceCost(level: Int) =  if (level == 1) 1 else if (level == 2) 4 else 20
 
 fun main(args: Array<String>) {
     val input = Scanner(System.`in`)
@@ -82,7 +69,6 @@ fun main(args: Array<String>) {
 //     TODO calculate Location -> Enemy HQ distance on first move
 //     TODO Possibly to mines as well
 
-    val utils = StarterUtils()
     val voidCellValue = 99;
     // game loop
     while (true) {
@@ -236,14 +222,14 @@ fun useGold(
             // 100 & 50 for rank ~100
             if (trainingSpot.second == null) {
                 val unitLevel = if (availableIncome > 50) 3 else if (availableIncome > 20) 2 else 1
-                availableIncome -= StarterUtils.pieceCost(unitLevel)
+                availableIncome -= pieceCost(unitLevel)
                 actions += TrainAction(unitLevel, trainingSpot.first.x, trainingSpot.first.y)
             } else {
                 if (trainingSpot.second!!.level == 1 ) {
-                    availableIncome -= StarterUtils.pieceCost(2)
+                    availableIncome -= pieceCost(2)
                     actions += TrainAction(2, trainingSpot.first.x, trainingSpot.first.y)
                 } else {
-                    availableIncome -= StarterUtils.pieceCost(3)
+                    availableIncome -= pieceCost(3)
                     actions += TrainAction(3, trainingSpot.first.x, trainingSpot.first.y)
                 }
             }

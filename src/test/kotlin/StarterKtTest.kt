@@ -6,18 +6,16 @@ import java.util.Collections.singletonList
 import java.util.Arrays
 
 internal class StarterKtTest {
-    private val starterUtils = StarterUtils()
-
     @Test
     internal fun piece_cost_should_be_1() {
-        val level1 = starterUtils.calculateCost(singletonList(Piece(1, true, 1)));
-        val level2 = starterUtils.calculateCost(singletonList(Piece(1, true, 2)));
-        val level3 = starterUtils.calculateCost(singletonList(Piece(1, true, 3)));
+        val level1 = calculateCost(singletonList(Piece(1, true, 1)));
+        val level2 = calculateCost(singletonList(Piece(1, true, 2)));
+        val level3 = calculateCost(singletonList(Piece(1, true, 3)));
         assertThat("Piece cost is 1", level1, `is`(1))
         assertThat("Piece cost is 4", level2, `is`(4))
         assertThat("Piece cost is 20", level3, `is`(20))
 
-        val allThree = starterUtils.calculateCost(
+        val allThree = calculateCost(
                 Arrays.asList(
                         Piece(1, true, 1),
                         Piece(1, true, 2),
@@ -39,7 +37,7 @@ internal class StarterKtTest {
 
     @Test
     internal fun print_empty_board() {
-        starterUtils.printBoard(GameData.emptyBoard())
+        printBoard(GameData.emptyBoard())
     }
 
     @Test
@@ -48,7 +46,7 @@ internal class StarterKtTest {
         val myPiece = testBoard.get(10).get(10)
         val enemyHQ = testBoard.get(11).get(11)
 
-        starterUtils.printBoard(testBoard)
+        printBoard(testBoard)
         val flatBoard = testBoard.flatten()
 
         val bestValueMove = bestValueMove(myPiece, enemyHQ, flatBoard)
