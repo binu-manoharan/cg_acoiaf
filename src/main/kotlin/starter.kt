@@ -42,7 +42,11 @@ data class TrainAction(val level: Int, override val x: Int, override val y: Int)
 }
 
 data class BuildAction(val type: Int, override val x: Int, override val y: Int) : Action {
-    override fun toString() = if (type == 1) "BUILD MINE $x $y" else "BUILD TOWER $x $y"
+    override fun toString() = when(type) {
+        1 -> "BUILD MINE $x $y"
+        2 -> "BUILD TOWER $x $y"
+        else -> throw Exception("Unexpected")
+    }
 }
 
 fun printBoard(board: List<List<Cell>>) {
@@ -91,11 +95,6 @@ fun main(args: Array<String>) {
             }
         }
 
-
-
-        lateinit var myHQ: Cell
-        lateinit var enemyHQ: Cell
-
         val buildingCount = input.nextInt()
         val buildings = mutableListOf<Building>()
 
@@ -104,16 +103,8 @@ fun main(args: Array<String>) {
             val buildingType = input.nextInt()
             val x = input.nextInt()
             val y = input.nextInt()
-            if (buildingType == 0) {
-                // HQ
-                val hq = board[y][x]!!
-                when (owner) {
-                    0 -> myHQ = hq
-                    1 -> enemyHQ = hq
-                }
-            }
-            buildings += Building(owner, buildingType, x, y)
 
+            buildings += Building(owner, buildingType, x, y)
         }
 
         val builtMinesLocations = buildings.filter { it.buildingType == 1 }
@@ -131,11 +122,10 @@ fun main(args: Array<String>) {
 
         val actions = generateActions(
                 board,
-                enemyHQ,
-                builtMinesLocations.toMutableList(),
                 gold,
                 income,
-                mines
+                mines,
+                buildings.toList()
         )
 
         if (actions.any()) {
@@ -148,21 +138,25 @@ fun main(args: Array<String>) {
 
 fun generateActions(
         board: List<List<Cell>>,
-        enemyHQ: Cell,
-        builtMines: MutableList<Location>,
         gold: Int,
         income: Int,
-        mines: List<Location>
+        mines: List<Location>,
+        buildings: List<Building>
 ): List<Action> {
 
-    val actions = mutableListOf<Action>()
-    // Gives us a flat list of the non-void cells
+    val myHQ = buildings.filter { it.buildingType == 0 && it.owner == 0 }.map {board[it.y][it.x]}.first()
+    val opponentHQ = buildings.filter { it.buildingType == 0 && it.owner == 1 }.map {board[it.y][it.x]}.first()
+    val builtMinesLocations = buildings.filter { it.buildingType == 1 }
+            .map { Location(it.x, it.y) }
     val boardCells = board.flatten().filterNot { it.ownership == VOID_CELL_VALUE }
+    val actions = mutableListOf<Action>()
+
+    // Gives us a flat list of the non-void cells
 
 //        TODO fix conflict between move and train as well - apply actions to board state
     val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
     myPiecesCells.map {
-        Pair(it, bestValueMove(it, enemyHQ, boardCells))
+        Pair(it, bestValueMove(it, opponentHQ, boardCells))
     }.forEach {
 //        TODO remove actions where the current piece cannot kill opponent
         actions += MoveAction(it.first.piece!!.id, it.second.x, it.second.y)
@@ -173,17 +167,17 @@ fun generateActions(
 
     val trainingSpots = getAllTrainingSpots(
             boardCells,
-            builtMines,
+            builtMinesLocations,
             actions.map { Location(it.x, it.y) }
     )
-    useGold(gold, income, builtMines, mines, board, trainingSpots.toMutableList())
+    useGold(gold, income, builtMinesLocations, mines, board, trainingSpots.toMutableList())
     return actions
 }
 
 fun useGold(
         gold: Int,
         income: Int,
-        builtMines: MutableList<Location>,
+        builtMines: List<Location>,
         mines: List<Location>,
         board: List<List<Cell>>,
         trainingSpots: MutableList<Location>
@@ -192,6 +186,7 @@ fun useGold(
     var availableIncome = income;
     val consumedTrainingSpots = mutableListOf<Location>()
     val actions = mutableListOf<Action>()
+    val mineLocation = builtMines.toMutableList()
     var canDoMoreActions = true
 
     trainingSpots.sortBy { abs(it.x - it.y) }
@@ -201,10 +196,10 @@ fun useGold(
             .reversed()
 
     while (availableGold > 0 && availableIncome > 0 && canDoMoreActions) {
-        val mineCost = 20 + builtMines.count() * 4
+        val mineCost = 20 + mineLocation.count() * 4
 
         if (availableGold > mineCost) {
-            val possibleMineLocation = mines.filterNot { builtMines.contains(it) }
+            val possibleMineLocation = mines.filterNot { mineLocation.contains(it) }
                     .map { board[it.y][it.x] }
                     .filter { it.piece == null }
                     .filter { it.ownership == 1 || it.ownership == 2 }
@@ -213,7 +208,7 @@ fun useGold(
 
             if (possibleMineLocation != null) {
                 availableGold -= mineCost
-                builtMines += Location(possibleMineLocation.x, possibleMineLocation.y)
+                mineLocation += Location(possibleMineLocation.x, possibleMineLocation.y)
                 actions += BuildAction(1, possibleMineLocation.x, possibleMineLocation.y)
             }
         }
