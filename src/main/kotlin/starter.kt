@@ -224,6 +224,8 @@ fun main(args: Array<String>) {
 
     // game loop
     while (true) {
+        val startTime = System.currentTimeMillis();
+
         val gold = input.nextInt()
         val income = input.nextInt()
         val opponentGold = input.nextInt()
@@ -275,11 +277,15 @@ fun main(args: Array<String>) {
                 opponentIncome
         )
 
+        val endTime = System.currentTimeMillis()
         if (actions.any()) {
-            println(actions.joinToString(";"))
+            print(actions.joinToString(";"))
+            val timeTaken = endTime - startTime
+            println(";MSG $timeTaken")
         } else {
-            println("WAIT")
+            println("WAIT;")
         }
+
     }
 }
 
