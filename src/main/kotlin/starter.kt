@@ -58,6 +58,8 @@ fun calculateCost(pieces: List<Piece>) = pieces.map { it.pieceCost() }.sum()
 
 fun pieceCost(level: Int) =  if (level == 1) 1 else if (level == 2) 4 else 20
 
+private val VOID_CELL_VALUE = 99
+
 fun main(args: Array<String>) {
     val input = Scanner(System.`in`)
     val mines = List(input.nextInt()) {
@@ -69,7 +71,6 @@ fun main(args: Array<String>) {
 //     TODO calculate Location -> Enemy HQ distance on first move
 //     TODO Possibly to mines as well
 
-    val voidCellValue = 99;
     // game loop
     while (true) {
         val gold = input.nextInt()
@@ -80,7 +81,7 @@ fun main(args: Array<String>) {
         val board: List<List<Cell>> = List(12) { y ->
             input.next().mapIndexed { x: Int, ch ->
                 val type = when (ch) {
-                    '#' -> voidCellValue
+                    '#' -> VOID_CELL_VALUE
                     '.' -> -1
                     'O' -> 2; 'o' -> 1
                     'X' -> -3; 'x' -> -2
@@ -90,8 +91,7 @@ fun main(args: Array<String>) {
             }
         }
 
-        // Gives us a flat list of the non-void cells
-        val boardCells = board.flatten().filterNot { it.ownership == voidCellValue }
+
 
         lateinit var myHQ: Cell
         lateinit var enemyHQ: Cell
@@ -113,6 +113,7 @@ fun main(args: Array<String>) {
                 }
             }
             buildings += Building(owner, buildingType, x, y)
+
         }
 
         val builtMinesLocations = buildings.filter { it.buildingType == 1 }
@@ -128,16 +129,13 @@ fun main(args: Array<String>) {
             cell.piece = Piece(unitId, owner == 0, level)
         }
 
-        val actions = mutableListOf<Action>()
-        generateActions(
-                boardCells,
+        val actions = generateActions(
+                board,
                 enemyHQ,
-                actions,
                 builtMinesLocations.toMutableList(),
                 gold,
                 income,
-                mines,
-                board
+                mines
         )
 
         if (actions.any()) {
@@ -149,15 +147,18 @@ fun main(args: Array<String>) {
 }
 
 fun generateActions(
-        boardCells: List<Cell>,
+        board: List<List<Cell>>,
         enemyHQ: Cell,
-        actions: MutableList<Action>,
         builtMines: MutableList<Location>,
         gold: Int,
         income: Int,
-        mines: List<Location>,
-        board: List<List<Cell>>
-) {
+        mines: List<Location>
+): List<Action> {
+
+    val actions = mutableListOf<Action>()
+    // Gives us a flat list of the non-void cells
+    val boardCells = board.flatten().filterNot { it.ownership == VOID_CELL_VALUE }
+
 //        TODO fix conflict between move and train as well - apply actions to board state
     val myPiecesCells = boardCells.filter { it.piece?.isFriendly == true }
     myPiecesCells.map {
@@ -175,7 +176,8 @@ fun generateActions(
             builtMines,
             actions.map { Location(it.x, it.y) }
     )
-    useGold(gold, income, builtMines, mines, board, actions, trainingSpots.toMutableList())
+    useGold(gold, income, builtMines, mines, board, trainingSpots.toMutableList())
+    return actions
 }
 
 fun useGold(
@@ -184,14 +186,14 @@ fun useGold(
         builtMines: MutableList<Location>,
         mines: List<Location>,
         board: List<List<Cell>>,
-        actions: MutableList<Action>,
         trainingSpots: MutableList<Location>
-) {
+): List<Action> {
     var availableGold = gold;
     var availableIncome = income;
-    var consumedTrainingSpots = mutableListOf<Location>()
+    val consumedTrainingSpots = mutableListOf<Location>()
+    val actions = mutableListOf<Action>()
     var canDoMoreActions = true
-    var moveActions = actions.map { Location(it.x, it.y) }
+
     trainingSpots.sortBy { abs(it.x - it.y) }
 
     val trainingSpotWithPieces = trainingSpots.map { Pair(it, board[it.y][it.x].piece) }
@@ -211,8 +213,8 @@ fun useGold(
 
             if (possibleMineLocation != null) {
                 availableGold -= mineCost
-                builtMines.add(Location(possibleMineLocation.x, possibleMineLocation.y))
-                actions.add(BuildAction(1, possibleMineLocation.x, possibleMineLocation.y))
+                builtMines += Location(possibleMineLocation.x, possibleMineLocation.y)
+                actions += BuildAction(1, possibleMineLocation.x, possibleMineLocation.y)
             }
         }
 
@@ -238,6 +240,7 @@ fun useGold(
             canDoMoreActions = false
         }
     }
+    return actions
 }
 
 fun bestValueMove(myPiece: Cell, enemyHQ: Cell, flatBoard: List<Cell>): Cell {

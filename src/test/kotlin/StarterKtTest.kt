@@ -172,14 +172,12 @@ internal class StarterKtTest {
     @Test
     internal fun test_use_gold_creates_troops() {
         val testBoard = GameData.emptyBoard()
-        val actions = mutableListOf<Action>()
-        useGold(
+        val actions = useGold(
                 7,
                 2,
                 mutableListOf(),
                 emptyList(),
                 testBoard,
-                actions,
                 mutableListOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
@@ -190,18 +188,17 @@ internal class StarterKtTest {
                 )
         )
         assertThat(actions, hasSize(2))
-        actions.clear()
-        useGold(
+
+        val actions2 = useGold(
                 20,
                 2,
                 mutableListOf(),
                 emptyList(),
                 testBoard,
-                actions,
                 mutableListOf(Location(0, 1), Location(1, 0))
         )
         assertThat(
-                actions,
+                actions2,
                 anyOf(
                         hasItem(TrainAction(1, 1, 0)),
                         hasItem(TrainAction(1, 0, 1))
@@ -227,14 +224,12 @@ internal class StarterKtTest {
                 Cell(10, 0, 0, null),
                 Cell(11, 0, 0, null)
         )
-        val actions = mutableListOf<Action>()
-        useGold(
+        val actions = useGold(
                 30,
                 2,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
-                actions,
                 mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
@@ -247,18 +242,16 @@ internal class StarterKtTest {
         )
         assertThat(actions, hasSize(3))
 
-        actions.clear()
-        useGold(
+        val actions2 = useGold(
                 161,
                 100,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
-                actions,
                 mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
-                actions,
+                actions2,
                 allOf(
                         hasItem(BuildAction(1, 1, 0)),
                         hasItem(TrainAction(3, 0, 1)),
@@ -287,13 +280,12 @@ internal class StarterKtTest {
         )
         val actions = mutableListOf<Action>()
         actions += MoveAction(1, 2, 0)
-        useGold(
+        actions += useGold(
                 30,
                 2,
                 mutableListOf(),
                 mutableListOf(Location(1, 0)),
                 testBoard,
-                actions,
                 mutableListOf(Location(0, 1), Location(1, 1))
         )
         assertThat(
@@ -340,16 +332,13 @@ internal class StarterKtTest {
                 Cell(11, 0, 0, null)
         )
 
-        var actions = mutableListOf<Action>()
-        generateActions(
-                testBoard.flatten(),
+        val actions = generateActions(
+                testBoard,
                 testBoard[11][11],
-                actions,
                 mutableListOf(),
                 0,
                 0,
-                emptyList(),
-                testBoard
+                emptyList()
         )
         assertThat(actions.get(0) as MoveAction, `is`(MoveAction(3, 4, 0)))
         assertThat(actions.get(1) as MoveAction, `is`(MoveAction(2, 3, 0)))
